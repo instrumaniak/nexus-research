@@ -20,8 +20,8 @@
 │      Search  Reader  Summarizer  KbAgent  ReportWriter   │
 └──────┬─────┴──┬────┴───┬───────┴──┬──────┴──┬───────────┘
        │        │        │          │          │
-  Brave/DDG  Cheerio  OpenRouter  sqlite-vec  OpenRouter
-                        (free)    + FTS5      (free)
+  Brave/DDG  Cheerio  AI Provider sqlite-vec  AI Provider
+                        (LLM)     + FTS5      (LLM)
                             │
                       ┌─────▼──────┐
                       │  nexus.db  │
@@ -39,8 +39,8 @@ User submits query
   → OrchestratorService.runWebSearch(query)
       → SearchAgent.search(query)        [Brave API / DDG]
       → ReaderAgent.scrape(url[])        [Axios + Cheerio]
-      → SummarizerAgent.summarize(text)  [OpenRouter]
-      → SynthesizerAgent.synthesize()    [OpenRouter]
+      → SummarizerAgent.summarize(text)  [AI Provider]
+      → SynthesizerAgent.synthesize()    [AI Provider]
   → SSE stream tokens back to frontend
   → ChatService.saveSession(messages)   [Drizzle → SQLite]
 ```
@@ -54,7 +54,7 @@ User submits query (KB Search mode)
       → KbService.semanticSearch(vector)       [sqlite-vec]
       → KbService.keywordSearch(query)         [FTS5]
       → KbService.hybridRank(semantic, keyword)
-      → SynthesizerAgent.synthesize(kbResults)  [OpenRouter]
+      → SynthesizerAgent.synthesize(kbResults)  [AI Provider]
   → SSE stream back to frontend
 ```
 
@@ -63,13 +63,13 @@ User submits query (KB Search mode)
 ```
 User submits query (Deep Research mode)
   → OrchestratorService.runDeepResearch(query)
-      → OpenRouter: decompose query into 3-5 sub-questions
+      → AI Provider: decompose query into 3-5 sub-questions
       → For each sub-question (parallel):
           → SearchAgent.search()
           → ReaderAgent.scrape()
           → SummarizerAgent.summarize()
       → OrchestratorService: check coverage, add searches if gaps found
-      → ReportWriterAgent.writeReport(allSummaries)  [OpenRouter]
+      → ReportWriterAgent.writeReport(allSummaries)  [AI Provider]
   → SSE stream progress steps + final report
 ```
 
@@ -84,14 +84,14 @@ User submits query (Deep Research mode)
 | Agents | — | OrchestratorService | Coordinates all agent calls |
 | Agents | — | SearchAgent | Brave Search / DuckDuckGo |
 | Agents | — | ReaderAgent | Axios + Cheerio scraper |
-| Agents | — | SummarizerAgent | OpenRouter summarization |
-| Agents | — | SynthesizerAgent | OpenRouter synthesis |
-| Agents | — | ReportWriterAgent | OpenRouter deep research report |
+| Agents | — | SummarizerAgent | AI Provider summarization |
+| Agents | — | SynthesizerAgent | AI Provider synthesis |
+| Agents | — | ReportWriterAgent | AI Provider deep research report |
 | Agents | — | KbAgent | KB lookup within agent pipeline |
 | EmbeddingsModule | — | EmbeddingsService | @xenova/transformers wrapper |
 | LoggingModule | — | LoggingService | Winston + SQLite transport |
 | EmailModule | — | EmailService | Nodemailer + cPanel SMTP (Phase 2) |
-| OpenRouterModule | — | OpenRouterService | All LLM API calls |
+| AiProviderModule | — | AiProviderService | All LLM API calls (configurable provider) |
 
 ## Frontend Route Map
 

@@ -2,6 +2,8 @@
 
 The chat input has a mode selector. User picks one mode per query before submitting.
 
+> **Note:** Model IDs shown below are defaults. All models are configurable via environment variables (see [TECH_STACK.md](TECH_STACK.md) and `.env.example`).
+
 ## Mode 1 — Web Search 🌐
 
 **When to use:** Current events, new topics, anything not in the KB.
@@ -18,10 +20,10 @@ OrchestratorService.runWebSearch(query, userId)
       → Cheerio: remove nav/footer/scripts, extract article/main/body text
       → Truncate to 4000 chars per article
   → SummarizerAgent.summarize(articleText, query) × per article
-      → OpenRouter: llama-3.3-70b-instruct:free
+      → AI Provider: llama-3.3-70b-instruct:free
       → Returns structured bullet summary
   → SynthesizerAgent.synthesize(summaries[], query)
-      → OpenRouter: llama-3.3-70b-instruct:free
+      → AI Provider: llama-3.3-70b-instruct:free
       → Returns: final answer + sources list
   → SSE stream tokens to frontend
   → Save session + messages to DB
@@ -56,7 +58,7 @@ OrchestratorService.runKbSearch(query, userId)
       → Emit { step: "no_results", message: "Nothing found in your KB. Try Web Search." }
       → End pipeline
   → SynthesizerAgent.synthesize(kbResults, query)
-      → OpenRouter: gemma-2-9b-it:free
+      → AI Provider: gemma-2-9b-it:free
       → Returns: answer grounded in KB content
   → SSE stream tokens to frontend
 ```
@@ -74,7 +76,7 @@ OrchestratorService.runKbSearch(query, userId)
 **Pipeline:**
 ```
 OrchestratorService.runDeepResearch(query, userId)
-  → OpenRouter (deepseek-r1:free): decompose query into 3-5 sub-questions
+  → AI Provider (deepseek-r1:free): decompose query into 3-5 sub-questions
   → Emit { step: "planning", subQuestions: [...] }
   
   → For each sub-question (parallel Promise.all):
@@ -84,11 +86,11 @@ OrchestratorService.runDeepResearch(query, userId)
       → Emit { step: "progress", completed: N, total: M }
   
   → OrchestratorService: coverage check
-      → OpenRouter: "Are there gaps in this research?"
+      → AI Provider: "Are there gaps in this research?"
       → If gaps: run 1-2 additional searches
   
   → ReportWriterAgent.writeReport(allSummaries, query)
-      → OpenRouter (mistral-7b-instruct:free)
+      → AI Provider (mistral-7b-instruct:free)
       → Prompt: produce structured markdown report with:
           - Executive summary
           - Section per sub-question

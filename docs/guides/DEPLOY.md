@@ -124,8 +124,8 @@ All secrets are set in the cPanel Node.js environment panel — never committed 
 | `JWT_ACCESS_EXPIRY` | `15m` |
 | `JWT_REFRESH_EXPIRY` | `7d` |
 | `DATABASE_PATH` | `./nexus.db` |
-| `OPENROUTER_API_KEY` | From openrouter.ai |
-| `OPENROUTER_BASE_URL` | `https://openrouter.ai/api/v1` |
+| `AI_PROVIDER_API_KEY` | From openrouter.ai (or leave blank for Ollama) |
+| `AI_PROVIDER_BASE_URL` | `https://openrouter.ai/api/v1` (or `http://localhost:11434/v1` for Ollama) |
 | `BRAVE_SEARCH_API_KEY` | Optional — DuckDuckGo fallback if absent |
 | `NODE_ENV` | `production` |
 | `PORT` | `3000` |

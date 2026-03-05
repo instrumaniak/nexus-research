@@ -17,19 +17,20 @@ backend/src/agents/
 ```typescript
 // backend/src/agents/my-new/my-new.agent.ts
 import { Injectable, Logger } from '@nestjs/common';
-import { OpenRouterService } from '../openrouter/openrouter.service';
+import { AiProviderService } from '../ai-provider/ai-provider.service';
+import { AI_MODELS } from '../../config/models.config';
 
 @Injectable()
 export class MyNewAgent {
   private readonly logger = new Logger(MyNewAgent.name);
 
-  constructor(private readonly openrouter: OpenRouterService) {}
+  constructor(private readonly aiProvider: AiProviderService) {}
 
   async run(input: string, context?: Record<string, unknown>): Promise<string> {
     this.logger.log(`Running MyNewAgent — input length: ${input.length}`);
 
-    const result = await this.openrouter.complete({
-      model: 'google/gemma-2-9b-it:free',
+    const result = await this.aiProvider.complete({
+      model: AI_MODELS.quickQA,  // Configurable model ID
       systemPrompt: 'You are a specialist agent. Do X.',
       userPrompt: input,
     });
@@ -43,7 +44,7 @@ export class MyNewAgent {
 
 1. **Agents never call each other directly.** All orchestration goes through `OrchestratorService`.
 2. **Agents never call the DB directly.** Use injected services (KbService, ChatService, etc.) if persistence is needed.
-3. **All OpenRouter calls go through `OpenRouterService`.** Never instantiate `axios` in an agent.
+3. **All AI Provider calls go through `AiProviderService`.** Never instantiate `axios` in an agent.
 4. **Log the start and end of every agent run** using NestJS `Logger` — the context string is the agent class name.
 5. **Agents must be stateless.** No instance variables that persist between calls.
 
@@ -91,3 +92,19 @@ const result = await this.myNewAgent.run(input);
 ```
 
 Step names use `snake_case`. Message is user-facing.
+
+## Model Configuration
+
+All model IDs are defined in `backend/src/config/models.config.ts`:
+
+```typescript
+// backend/src/config/models.config.ts
+export const AI_MODELS = {
+  orchestration: process.env.AI_MODEL_ORCHESTRATION || 'deepseek/deepseek-r1:free',
+  summarization: process.env.AI_MODEL_SUMMARIZATION || 'meta-llama/llama-3.3-70b-instruct:free',
+  quickQA: process.env.AI_MODEL_QUICK_QA || 'google/gemma-2-9b-it:free',
+  reportWriting: process.env.AI_MODEL_REPORT || 'mistralai/mistral-7b-instruct:free',
+} as const;
+```
+
+Never hardcode model IDs in agents. Always import from the config file. This allows swapping models via environment variables without code changes.

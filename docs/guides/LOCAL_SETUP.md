@@ -32,7 +32,7 @@ cp backend/.env.example backend/.env
 # Edit backend/.env and fill in:
 #   JWT_ACCESS_SECRET (generate with: openssl rand -hex 32)
 #   JWT_REFRESH_SECRET (generate with: openssl rand -hex 32)
-#   OPENROUTER_API_KEY (get from openrouter.ai — free account)
+#   AI_PROVIDER_API_KEY (get from openrouter.ai — free account, or leave blank for Ollama)
 #   BRAVE_SEARCH_API_KEY (optional — get from brave.com/search/api)
 ```
 

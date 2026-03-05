@@ -39,17 +39,30 @@ Every choice listed here is final unless a new ADR is written. Do not suggest al
 | `react-router-dom` | v6 | Client-side routing |
 | `eventsource-parser` | latest | Parse SSE streams from backend |
 
-## OpenRouter — Free Models in Use
+## AI Provider — Models in Use
 
-| Task | Model ID | Notes |
+Model IDs are configurable via environment variables (see `.env.example`). Defaults are:
+
+| Task | Default Model ID | Notes |
 |---|---|---|
 | Orchestration & planning | `deepseek/deepseek-r1:free` | Best free reasoning model |
 | Summarization | `meta-llama/llama-3.3-70b-instruct:free` | High quality, reliable |
 | Quick Q&A / synthesis | `google/gemma-2-9b-it:free` | Fast, low latency |
 | Report writing | `mistralai/mistral-7b-instruct:free` | Good structured output |
 
-Model IDs may change as OpenRouter updates free tier availability.
-Always check https://openrouter.ai/models?q=free before assuming a model is still free.
+### Model Configuration
+
+All model IDs are defined in `backend/src/config/models.config.ts`. Override via environment:
+
+```env
+AI_MODEL_ORCHESTRATION=deepseek/deepseek-r1:free
+AI_MODEL_SUMMARIZATION=meta-llama/llama-3.3-70b-instruct:free
+AI_MODEL_QUICK_QA=google/gemma-2-9b-it:free
+AI_MODEL_REPORT=mistralai/mistral-7b-instruct:free
+```
+
+For OpenRouter, check https://openrouter.ai/models?q=free for current free tier availability.
+For Ollama, use local model names like `llama3.2` or `mistral`.
 
 ## Embeddings Model
 

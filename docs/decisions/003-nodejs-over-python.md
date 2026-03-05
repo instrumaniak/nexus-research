@@ -20,7 +20,7 @@ Use **Node.js with NestJS (TypeScript)** for the backend.
 - A shipped Node.js app beats an unfinished Python app
 
 ### The Python AI ecosystem advantage is overstated for this use case
-- Nexus uses OpenRouter API (HTTP calls) — language-agnostic
+- Nexus uses AI Provider API (HTTP calls) — language-agnostic
 - Embeddings use `@xenova/transformers` (a well-maintained ONNX port of sentence-transformers)
 - Web scraping with Cheerio is comparable to BeautifulSoup4
 - The agent patterns needed (orchestrator + specialist agents) are straightforward HTTP + async — no LangChain required

@@ -22,7 +22,7 @@ Do not suggest alternatives to these. Every choice has a recorded decision (see 
 | Full-text search | SQLite FTS5 (virtual table) | — |
 | Frontend | React 18 + Vite + TypeScript + Tailwind CSS + shadcn/ui | — |
 | State management | Zustand | — |
-| AI API | OpenRouter (free tier only) | [ADR 004](docs/decisions/004-openrouter-free-tier.md) |
+| AI API | AI Provider (configurable: OpenRouter, Ollama, or any OpenAI-compatible endpoint) | [ADR 004](docs/decisions/004-openrouter-free-tier.md) |
 | Embeddings | @xenova/transformers, model: all-MiniLM-L6-v2 (local ONNX) | — |
 | Auth | @nestjs/jwt + bcrypt, phased rollout | [AUTH spec](docs/spec/AUTH.md) |
 | Email | Nodemailer + cPanel SMTP (Phase 2) | — |
@@ -89,7 +89,7 @@ Full architecture detail: [`docs/spec/ARCHITECTURE.md`](docs/spec/ARCHITECTURE.m
 
 ### AI / Agents
 - All AI responses stream via SSE — never return a full AI response in a single HTTP response
-- All OpenRouter calls go through `OpenRouterService` — never call the API directly from a controller
+- All AI Provider calls go through `AiProviderService` — never call the API directly from a controller
 - Agent pipelines are orchestrated by `OrchestratorService` — agents don't call each other directly
 
 ### Auth
