@@ -102,6 +102,19 @@ Full architecture detail: [`docs/spec/ARCHITECTURE.md`](docs/spec/ARCHITECTURE.m
 - Follow naming in `.env.example` exactly
 - Free/open-source only — do not introduce paid APIs or services
 
+## Testing conventions
+
+- Backend tests use **Jest** — unit tests live next to the file they test (`*.spec.ts`)
+- Frontend tests use **Vitest** + **React Testing Library** — test files live next to components (`*.test.tsx`)
+- E2E tests use **Playwright** — live in `e2e/` at the repo root
+- Always mock external API calls (AI Provider, Search Provider) at the service boundary — never let tests hit real APIs
+- Use a separate SQLite test DB for integration tests — never the development `nexus.db`
+- Test behaviour the user experiences, not internal implementation details
+- Never test NestJS boilerplate (module wiring, decorators, simple passthrough CRUD)
+- Every new NestJS service must have a corresponding `.spec.ts` file created at the same time
+- See full strategy: [`docs/guides/TESTING.md`](docs/guides/TESTING.md)
+
+
 ## What NOT to do
 
 - ❌ Do not suggest Prisma — see ADR 002
@@ -111,6 +124,10 @@ Full architecture detail: [`docs/spec/ARCHITECTURE.md`](docs/spec/ARCHITECTURE.m
 - ❌ Do not edit migration files after they have been committed
 - ❌ Do not put logic in React components that belongs in Zustand stores or API layer
 - ❌ Do not use `any` type in TypeScript without a comment explaining why
+- ❌ Do not write tests that import and assert on internal component state — test what renders
+- ❌ Do not hit real external APIs in any test — always mock at the service interface
+- ❌ Do not share state between tests — each test must be independently runnable
+- ❌ Do not skip writing the `.spec.ts` file when creating a new service
 
 ## Useful references
 
@@ -124,3 +141,4 @@ Full architecture detail: [`docs/spec/ARCHITECTURE.md`](docs/spec/ARCHITECTURE.m
 | Phase 1 scope + stories | `docs/phases/PHASE1-auth-chat.md` |
 | Deploy sequence | `docs/guides/DEPLOY.md` |
 | Local setup | `docs/guides/LOCAL_SETUP.md` |
+| Testing strategy | `docs/guides/TESTING.md` |
