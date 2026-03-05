@@ -1,11 +1,12 @@
 import Database from 'better-sqlite3';
+import type BetterSqlite3 from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
 import * as schema from './schema';
 
 const dbPath = process.env.DATABASE_PATH ?? './nexus.db';
 
 // Initialize better-sqlite3 connection
-const sqlite = new Database(dbPath);
+const sqlite: BetterSqlite3.Database = new Database(dbPath);
 
 // Enable WAL mode for better concurrency
 sqlite.pragma('journal_mode = WAL');
