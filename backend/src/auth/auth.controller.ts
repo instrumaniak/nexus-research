@@ -15,10 +15,11 @@ import { Request, Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { StatusGuard } from '../common/guards/status.guard';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { User } from '../../drizzle/schema';
 import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
+import { LoginDto, loginSchema } from './dto/login.dto';
+import { RegisterDto, registerSchema } from './dto/register.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -28,14 +29,14 @@ export class AuthController {
   ) {}
 
   @Post('register')
-  async register(@Body() dto: RegisterDto) {
+  async register(@Body(new ZodValidationPipe(registerSchema)) dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
   @Post('login')
   @UseGuards(AuthGuard('local'))
   async login(
-    @Body() _dto: LoginDto,
+    @Body(new ZodValidationPipe(loginSchema)) _dto: LoginDto,
     @CurrentUser() user: User,
     @Res({ passthrough: true }) response: Response,
   ) {
