@@ -1,0 +1,13 @@
+{
+  "version": "5",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1772703778991,
+      "tag": "0001_fearless_reptil",
+      "breakpoints": true
+    }
+  ]
+}

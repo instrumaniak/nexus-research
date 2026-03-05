@@ -1,0 +1,21 @@
+{
+  "name": "nexus",
+  "version": "1.0.0",
+  "description": "Nexus - Self-hosted AI research assistant",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:backend": "npm run start:dev -w backend",
+    "dev:frontend": "npm run dev -w frontend",
+    "build": "npm run build -w backend && npm run build -w frontend",
+    "migrate": "npm run migrate -w backend",
+    "generate": "npm run generate -w backend",
+    "studio": "npm run studio -w backend"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
