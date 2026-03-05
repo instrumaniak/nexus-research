@@ -6,6 +6,7 @@ import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { JwtConfigModule } from './config/jwt.config';
+import { DatabaseModule } from './database';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { JwtConfigModule } from './config/jwt.config';
     }),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtConfigModule,
+    DatabaseModule,
     AuthModule,
   ],
   controllers: [],
