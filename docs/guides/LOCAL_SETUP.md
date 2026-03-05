@@ -33,7 +33,8 @@ cp backend/.env.example backend/.env
 #   JWT_ACCESS_SECRET (generate with: openssl rand -hex 32)
 #   JWT_REFRESH_SECRET (generate with: openssl rand -hex 32)
 #   AI_PROVIDER_API_KEY (get from openrouter.ai — free account, or leave blank for Ollama)
-#   BRAVE_SEARCH_API_KEY (optional — get from brave.com/search/api)
+#   SEARCH_PROVIDER (choose provider adapter, e.g. brave or duckduckgo)
+#   SEARCH_PROVIDER_API_KEY (optional — only required for providers that need a key)
 ```
 
 ## Database setup

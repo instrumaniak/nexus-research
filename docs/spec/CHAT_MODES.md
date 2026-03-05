@@ -12,8 +12,9 @@ The chat input has a mode selector. User picks one mode per query before submitt
 ```
 OrchestratorService.runWebSearch(query, userId)
   → SearchAgent.search(query)
-      → Brave Search API (BRAVE_SEARCH_API_KEY set)
-      → DuckDuckGo scrape fallback (if key absent)
+      → Search Provider Adapter (selected by SEARCH_PROVIDER)
+      → Uses SEARCH_PROVIDER_API_KEY when required by provider
+      → Example providers: Brave Search API, DuckDuckGo
       → Returns: [{ url, title, snippet }] × 5
   → ReaderAgent.scrape(urls[0..2])
       → Axios GET each URL

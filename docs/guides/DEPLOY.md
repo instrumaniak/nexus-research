@@ -126,7 +126,8 @@ All secrets are set in the cPanel Node.js environment panel — never committed 
 | `DATABASE_PATH` | `./nexus.db` |
 | `AI_PROVIDER_API_KEY` | From openrouter.ai (or leave blank for Ollama) |
 | `AI_PROVIDER_BASE_URL` | `https://openrouter.ai/api/v1` (or `http://localhost:11434/v1` for Ollama) |
-| `BRAVE_SEARCH_API_KEY` | Optional — DuckDuckGo fallback if absent |
+| `SEARCH_PROVIDER` | Search provider adapter to use (examples: `brave`, `duckduckgo`) |
+| `SEARCH_PROVIDER_API_KEY` | Optional — required only for providers that need an API key |
 | `NODE_ENV` | `production` |
 | `PORT` | `3000` |
 | `LOG_LEVEL` | `info` |

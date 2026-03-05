@@ -20,7 +20,8 @@
 │      Search  Reader  Summarizer  KbAgent  ReportWriter   │
 └──────┬─────┴──┬────┴───┬───────┴──┬──────┴──┬───────────┘
        │        │        │          │          │
-  Brave/DDG  Cheerio  AI Provider sqlite-vec  AI Provider
+  Search    Cheerio  AI Provider sqlite-vec  AI Provider
+  Provider
                         (LLM)     + FTS5      (LLM)
                             │
                       ┌─────▼──────┐
@@ -37,7 +38,7 @@ User submits query
   → JwtAuthGuard + StatusGuard
   → ChatService.handleQuery()
   → OrchestratorService.runWebSearch(query)
-      → SearchAgent.search(query)        [Brave API / DDG]
+      → SearchAgent.search(query)        [Search Provider Adapter]
       → ReaderAgent.scrape(url[])        [Axios + Cheerio]
       → SummarizerAgent.summarize(text)  [AI Provider]
       → SynthesizerAgent.synthesize()    [AI Provider]
@@ -82,7 +83,7 @@ User submits query (Deep Research mode)
 | ChatModule | ChatController | ChatService | SSE streaming, session + message persistence |
 | KbModule | KbController | KbService | KB CRUD, FTS5 + semantic search |
 | Agents | — | OrchestratorService | Coordinates all agent calls |
-| Agents | — | SearchAgent | Brave Search / DuckDuckGo |
+| Agents | — | SearchAgent | Search Provider Adapter (e.g., Brave, DuckDuckGo) |
 | Agents | — | ReaderAgent | Axios + Cheerio scraper |
 | Agents | — | SummarizerAgent | AI Provider summarization |
 | Agents | — | SynthesizerAgent | AI Provider synthesis |
