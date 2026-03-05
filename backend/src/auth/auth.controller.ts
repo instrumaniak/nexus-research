@@ -9,6 +9,7 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -21,7 +22,10 @@ import { RegisterDto } from './dto/register.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post('register')
   async register(@Body() dto: RegisterDto) {
@@ -79,7 +83,9 @@ export class AuthController {
     response.clearCookie('refresh_token', {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure:
+        this.configService.get<'development' | 'production' | 'test'>('app.nodeEnv') ===
+        'production',
       path: '/',
     });
 
@@ -109,14 +115,16 @@ export class AuthController {
     return {
       httpOnly: true,
       sameSite: 'lax' as const,
-      secure: process.env.NODE_ENV === 'production',
+      secure:
+        this.configService.get<'development' | 'production' | 'test'>('app.nodeEnv') ===
+        'production',
       maxAge: this.getRefreshCookieMaxAgeMs(),
       path: '/',
     };
   }
 
   private getRefreshCookieMaxAgeMs(): number {
-    const expiry = process.env.JWT_REFRESH_EXPIRY ?? '7d';
+    const expiry = this.configService.get<string>('auth.jwtRefreshExpiry') ?? '7d';
     const match = expiry.match(/^(\d+)([smhd])$/);
 
     if (!match) {

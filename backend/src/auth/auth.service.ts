@@ -5,11 +5,13 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { and, eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
 import { refreshTokens, User, users } from '../../drizzle/schema';
+import type { AuthConfig } from '../config';
 import { DRIZZLE_CLIENT, DrizzleClient } from '../database';
 import { RegisterDto } from './dto/register.dto';
 
@@ -30,6 +32,7 @@ export class AuthService {
   constructor(
     @Inject(DRIZZLE_CLIENT) private readonly db: DrizzleClient,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async register(dto: RegisterDto): Promise<{ message: string }> {
@@ -68,9 +71,7 @@ export class AuthService {
     return { message: 'Account pending approval' };
   }
 
-  async login(
-    user: User,
-  ): Promise<{
+  async login(user: User): Promise<{
     accessToken: string;
     user: { id: number; username: string; email: string; role: string };
   }> {
@@ -127,7 +128,7 @@ export class AuthService {
 
     try {
       payload = this.jwtService.verify<RefreshTokenPayload>(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: this.requireConfig<AuthConfig['jwtRefreshSecret']>('auth.jwtRefreshSecret'),
       });
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
@@ -227,13 +228,13 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(accessPayload, {
-      secret: process.env.JWT_ACCESS_SECRET,
-      expiresIn: process.env.JWT_ACCESS_EXPIRY ?? '15m',
+      secret: this.requireConfig<AuthConfig['jwtAccessSecret']>('auth.jwtAccessSecret'),
+      expiresIn: this.requireConfig<AuthConfig['jwtAccessExpiry']>('auth.jwtAccessExpiry'),
     });
 
     const refreshToken = this.jwtService.sign(refreshPayload, {
-      secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: process.env.JWT_REFRESH_EXPIRY ?? '7d',
+      secret: this.requireConfig<AuthConfig['jwtRefreshSecret']>('auth.jwtRefreshSecret'),
+      expiresIn: this.requireConfig<AuthConfig['jwtRefreshExpiry']>('auth.jwtRefreshExpiry'),
     });
 
     return {
@@ -250,5 +251,13 @@ export class AuthService {
     }
 
     return new Date(decoded.exp * 1000);
+  }
+
+  private requireConfig<T>(key: string): T {
+    const value = this.configService.get<T>(key);
+    if (value === undefined || value === null) {
+      throw new Error(`Missing required config: ${key}`);
+    }
+    return value;
   }
 }
