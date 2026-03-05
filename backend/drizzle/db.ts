@@ -1,3 +1,5 @@
+// DEPRECATED: Application providers should use DatabaseModule + DRIZZLE_CLIENT injection.
+// This file remains only for legacy scripts (e.g. scripts/create-superadmin.ts).
 import Database from 'better-sqlite3';
 import type BetterSqlite3 from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';

@@ -9,29 +9,34 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import { Request, Response } from 'express';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { StatusGuard } from '../common/guards/status.guard';
+import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { User } from '../../drizzle/schema';
 import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
-import { RegisterDto } from './dto/register.dto';
+import { LoginDto, loginSchema } from './dto/login.dto';
+import { RegisterDto, registerSchema } from './dto/register.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post('register')
-  async register(@Body() dto: RegisterDto) {
+  async register(@Body(new ZodValidationPipe(registerSchema)) dto: RegisterDto) {
     return this.authService.register(dto);
   }
 
   @Post('login')
   @UseGuards(AuthGuard('local'))
   async login(
-    @Body() _dto: LoginDto,
+    @Body(new ZodValidationPipe(loginSchema)) _dto: LoginDto,
     @CurrentUser() user: User,
     @Res({ passthrough: true }) response: Response,
   ) {
@@ -79,7 +84,9 @@ export class AuthController {
     response.clearCookie('refresh_token', {
       httpOnly: true,
       sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      secure:
+        this.configService.get<'development' | 'production' | 'test'>('app.nodeEnv') ===
+        'production',
       path: '/',
     });
 
@@ -109,14 +116,16 @@ export class AuthController {
     return {
       httpOnly: true,
       sameSite: 'lax' as const,
-      secure: process.env.NODE_ENV === 'production',
+      secure:
+        this.configService.get<'development' | 'production' | 'test'>('app.nodeEnv') ===
+        'production',
       maxAge: this.getRefreshCookieMaxAgeMs(),
       path: '/',
     };
   }
 
   private getRefreshCookieMaxAgeMs(): number {
-    const expiry = process.env.JWT_REFRESH_EXPIRY ?? '7d';
+    const expiry = this.configService.get<string>('auth.jwtRefreshExpiry') ?? '7d';
     const match = expiry.match(/^(\d+)([smhd])$/);
 
     if (!match) {

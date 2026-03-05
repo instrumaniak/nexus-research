@@ -1,15 +1,18 @@
 import {
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { and, eq } from 'drizzle-orm';
 import { randomUUID } from 'crypto';
-import { db } from '../../drizzle/db';
 import { refreshTokens, User, users } from '../../drizzle/schema';
+import type { AuthConfig } from '../config';
+import { DRIZZLE_CLIENT, DrizzleClient } from '../database';
 import { RegisterDto } from './dto/register.dto';
 
 interface TokenPayload {
@@ -26,10 +29,14 @@ interface RefreshTokenPayload {
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(
+    @Inject(DRIZZLE_CLIENT) private readonly db: DrizzleClient,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+  ) {}
 
   async register(dto: RegisterDto): Promise<{ message: string }> {
-    const existingByEmail = await db
+    const existingByEmail = await this.db
       .select()
       .from(users)
       .where(eq(users.email, dto.email))
@@ -39,7 +46,7 @@ export class AuthService {
       throw new ConflictException('Email already exists');
     }
 
-    const existingByUsername = await db
+    const existingByUsername = await this.db
       .select()
       .from(users)
       .where(eq(users.username, dto.username))
@@ -51,7 +58,7 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(dto.password, 12);
 
-    await db.insert(users).values({
+    await this.db.insert(users).values({
       username: dto.username,
       email: dto.email,
       password: hashedPassword,
@@ -64,7 +71,10 @@ export class AuthService {
     return { message: 'Account pending approval' };
   }
 
-  async login(user: User): Promise<{ accessToken: string; user: { id: number; username: string; email: string; role: string } }> {
+  async login(user: User): Promise<{
+    accessToken: string;
+    user: { id: number; username: string; email: string; role: string };
+  }> {
     if (user.status === 'PENDING') {
       throw new ForbiddenException('Account pending approval');
     }
@@ -76,7 +86,7 @@ export class AuthService {
     const { accessToken, refreshToken } = this.issueTokens(user);
 
     // Phase 1 decision: store raw refresh tokens in DB for direct revocation checks.
-    await db.insert(refreshTokens).values({
+    await this.db.insert(refreshTokens).values({
       userId: user.id,
       token: refreshToken,
       revoked: false,
@@ -84,7 +94,7 @@ export class AuthService {
       createdAt: new Date(),
     });
 
-    await db
+    await this.db
       .update(users)
       .set({
         lastLoginAt: new Date(),
@@ -118,13 +128,13 @@ export class AuthService {
 
     try {
       payload = this.jwtService.verify<RefreshTokenPayload>(refreshToken, {
-        secret: process.env.JWT_REFRESH_SECRET,
+        secret: this.requireConfig<AuthConfig['jwtRefreshSecret']>('auth.jwtRefreshSecret'),
       });
     } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const tokenRow = await db
+    const tokenRow = await this.db
       .select()
       .from(refreshTokens)
       .where(eq(refreshTokens.token, refreshToken))
@@ -138,7 +148,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const user = await db
+    const user = await this.db
       .select()
       .from(users)
       .where(and(eq(users.id, payload.sub), eq(users.status, 'ACTIVE')))
@@ -148,14 +158,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    await db
+    await this.db
       .update(refreshTokens)
       .set({ revoked: true })
       .where(eq(refreshTokens.id, tokenRow.id));
 
     const nextTokens = this.issueTokens(user);
 
-    await db.insert(refreshTokens).values({
+    await this.db.insert(refreshTokens).values({
       userId: user.id,
       token: nextTokens.refreshToken,
       revoked: false,
@@ -176,18 +186,14 @@ export class AuthService {
       return;
     }
 
-    await db
+    await this.db
       .update(refreshTokens)
       .set({ revoked: true })
       .where(eq(refreshTokens.token, refreshToken));
   }
 
   async validateUser(email: string, password: string): Promise<User | null> {
-    const user = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, email))
-      .get();
+    const user = await this.db.select().from(users).where(eq(users.email, email)).get();
 
     if (!user || !user.password) {
       return null;
@@ -203,7 +209,7 @@ export class AuthService {
   }
 
   async revokeAllTokensForUser(userId: number): Promise<void> {
-    await db
+    await this.db
       .update(refreshTokens)
       .set({ revoked: true })
       .where(eq(refreshTokens.userId, userId));
@@ -222,13 +228,13 @@ export class AuthService {
     };
 
     const accessToken = this.jwtService.sign(accessPayload, {
-      secret: process.env.JWT_ACCESS_SECRET,
-      expiresIn: process.env.JWT_ACCESS_EXPIRY ?? '15m',
+      secret: this.requireConfig<AuthConfig['jwtAccessSecret']>('auth.jwtAccessSecret'),
+      expiresIn: this.requireConfig<AuthConfig['jwtAccessExpiry']>('auth.jwtAccessExpiry'),
     });
 
     const refreshToken = this.jwtService.sign(refreshPayload, {
-      secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: process.env.JWT_REFRESH_EXPIRY ?? '7d',
+      secret: this.requireConfig<AuthConfig['jwtRefreshSecret']>('auth.jwtRefreshSecret'),
+      expiresIn: this.requireConfig<AuthConfig['jwtRefreshExpiry']>('auth.jwtRefreshExpiry'),
     });
 
     return {
@@ -245,5 +251,13 @@ export class AuthService {
     }
 
     return new Date(decoded.exp * 1000);
+  }
+
+  private requireConfig<T>(key: string): T {
+    const value = this.configService.get<T>(key);
+    if (value === undefined || value === null) {
+      throw new Error(`Missing required config: ${key}`);
+    }
+    return value;
   }
 }

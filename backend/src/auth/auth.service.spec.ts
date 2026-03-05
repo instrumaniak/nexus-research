@@ -1,18 +1,11 @@
 import { ConflictException, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
-import { db } from '../../drizzle/db';
 import { User } from '../../drizzle/schema';
+import { DRIZZLE_CLIENT } from '../database';
 import { AuthService } from './auth.service';
-
-jest.mock('../../drizzle/db', () => ({
-  db: {
-    select: jest.fn(),
-    insert: jest.fn(),
-    update: jest.fn(),
-  },
-}));
 
 type MockDb = {
   select: jest.Mock;
@@ -36,6 +29,7 @@ describe('AuthService', () => {
   let service: AuthService;
   let jwtService: jest.Mocked<JwtService>;
   let mockDb: MockDb;
+  let mockConfigService: { get: jest.Mock };
 
   const activeUser: User = {
     id: 1,
@@ -59,14 +53,29 @@ describe('AuthService', () => {
   };
 
   beforeEach(async () => {
-    process.env.JWT_ACCESS_SECRET = 'access-secret';
-    process.env.JWT_REFRESH_SECRET = 'refresh-secret';
-    process.env.JWT_ACCESS_EXPIRY = '15m';
-    process.env.JWT_REFRESH_EXPIRY = '7d';
+    mockConfigService = {
+      get: jest.fn((key: string) => {
+        const config: Record<string, string> = {
+          'auth.jwtAccessSecret': 'test-access-secret-that-is-long-enough',
+          'auth.jwtRefreshSecret': 'test-refresh-secret-that-is-long-enough',
+          'auth.jwtAccessExpiry': '15m',
+          'auth.jwtRefreshExpiry': '7d',
+        };
+        return config[key];
+      }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
+        {
+          provide: DRIZZLE_CLIENT,
+          useValue: {
+            select: jest.fn(),
+            insert: jest.fn(),
+            update: jest.fn(),
+          },
+        },
         {
           provide: JwtService,
           useValue: {
@@ -75,12 +84,13 @@ describe('AuthService', () => {
             decode: jest.fn(),
           },
         },
+        { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
 
     service = module.get<AuthService>(AuthService);
     jwtService = module.get(JwtService);
-    mockDb = db as unknown as MockDb;
+    mockDb = module.get(DRIZZLE_CLIENT) as MockDb;
 
     jest.clearAllMocks();
   });
@@ -126,7 +136,11 @@ describe('AuthService', () => {
     });
 
     expect(result).toEqual({ message: 'Account pending approval' });
-    const insertedArg = values.mock.calls[0]?.[0] as { password: string; status: string; role: string };
+    const insertedArg = values.mock.calls[0]?.[0] as {
+      password: string;
+      status: string;
+      role: string;
+    };
     expect(insertedArg).toMatchObject({
       status: 'PENDING',
       role: 'USER',
@@ -188,9 +202,7 @@ describe('AuthService', () => {
   });
 
   it('login: ACTIVE user -> returns accessToken + user shape', async () => {
-    jwtService.sign
-      .mockReturnValueOnce('access-token')
-      .mockReturnValueOnce('refresh-token');
+    jwtService.sign.mockReturnValueOnce('access-token').mockReturnValueOnce('refresh-token');
     jwtService.decode.mockReturnValue({ exp: Math.floor(Date.now() / 1000) + 3600 });
     mockInsertValuesResolved();
     mockUpdateSetWhereResolved();
