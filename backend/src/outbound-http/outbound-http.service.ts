@@ -65,17 +65,17 @@ export class OutboundHttpService {
         ? undefined
         : setTimeout(() => abortController.abort(), options.timeout);
 
-    const response = await fetch(url, {
-      method: options.method ?? 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(options.headers ?? {}),
-      },
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
-      signal: abortController.signal,
-    });
-
     try {
+      const response = await fetch(url, {
+        method: options.method ?? 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(options.headers ?? {}),
+        },
+        body: options.body === undefined ? undefined : JSON.stringify(options.body),
+        signal: abortController.signal,
+      });
+
       if (!response.ok) {
         throw await this.buildFetchError(response);
       }

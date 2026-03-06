@@ -84,4 +84,22 @@ describe('OutboundHttpService', () => {
       '{"choices":[{"delta":{"content":"lo"}}]}',
     ]);
   });
+
+  it('streamSse clears the timeout when fetch fails before a response is created', async () => {
+    const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
+
+    jest.spyOn(global, 'fetch').mockRejectedValue(new Error('connection refused'));
+
+    await expect(
+      (async () => {
+        for await (const payload of service.streamSse('https://example.com', {
+          timeout: 30_000,
+        })) {
+          void payload;
+        }
+      })(),
+    ).rejects.toThrow('connection refused');
+
+    expect(clearTimeoutSpy).toHaveBeenCalled();
+  });
 });

@@ -61,7 +61,6 @@ export class AiProviderService {
           { role: 'user', content: params.userPrompt },
         ],
       },
-      timeout: 30_000,
     })) {
       const parsed = JSON.parse(payload) as StreamChunkResponse;
       const content = parsed.choices?.[0]?.delta?.content;
