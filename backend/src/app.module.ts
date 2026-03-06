@@ -5,6 +5,9 @@ import { PassportModule } from '@nestjs/passport';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
+import { AgentsModule } from './agents/agents.module';
+import { AiProviderModule } from './ai-provider/ai-provider.module';
+import { ChatModule } from './chat/chat.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { JwtConfigModule } from './config/jwt.config';
 import { DatabaseModule } from './database';
@@ -43,6 +46,9 @@ import {
     JwtConfigModule,
     DatabaseModule,
     AuthModule,
+    AiProviderModule,
+    AgentsModule,
+    ChatModule,
   ],
   controllers: [],
   providers: [
