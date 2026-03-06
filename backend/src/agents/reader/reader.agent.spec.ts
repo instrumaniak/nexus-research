@@ -1,22 +1,25 @@
-import axios from 'axios';
+import { OutboundHttpService } from '../../outbound-http/outbound-http.service';
 import { ReaderAgent } from './reader.agent';
-
-jest.mock('axios');
-
-const mockedAxios = jest.mocked(axios);
 
 describe('ReaderAgent', () => {
   let agent: ReaderAgent;
+  let outboundHttpService: {
+    getText: jest.Mock;
+  };
 
   beforeEach(() => {
-    agent = new ReaderAgent();
+    outboundHttpService = {
+      getText: jest.fn(),
+    };
+
+    agent = new ReaderAgent(outboundHttpService as unknown as OutboundHttpService);
     jest.clearAllMocks();
   });
 
   it('truncates extracted text to 4000 characters', async () => {
-    mockedAxios.get.mockResolvedValue({
-      data: `<html><head><title>Example</title></head><body><main>${'a'.repeat(5000)}</main></body></html>`,
-    });
+    outboundHttpService.getText.mockResolvedValue(
+      `<html><head><title>Example</title></head><body><main>${'a'.repeat(5000)}</main></body></html>`,
+    );
 
     const pages = await agent.scrape(['https://example.com']);
 
@@ -26,9 +29,11 @@ describe('ReaderAgent', () => {
   });
 
   it('skips failed URLs without throwing', async () => {
-    mockedAxios.get.mockRejectedValueOnce(new Error('timeout')).mockResolvedValueOnce({
-      data: '<html><head><title>Ok</title></head><body><article>content</article></body></html>',
-    });
+    outboundHttpService.getText
+      .mockRejectedValueOnce(new Error('timeout'))
+      .mockResolvedValueOnce(
+        '<html><head><title>Ok</title></head><body><article>content</article></body></html>',
+      );
 
     await expect(
       agent.scrape(['https://bad.example.com', 'https://good.example.com']),

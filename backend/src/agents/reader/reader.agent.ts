@@ -1,6 +1,6 @@
-import axios from 'axios';
 import { Injectable, Logger } from '@nestjs/common';
 import * as cheerio from 'cheerio';
+import { OutboundHttpService } from '../../outbound-http/outbound-http.service';
 
 export interface ScrapedPage {
   url: string;
@@ -12,6 +12,8 @@ export interface ScrapedPage {
 export class ReaderAgent {
   private readonly logger = new Logger(ReaderAgent.name);
 
+  constructor(private readonly outboundHttpService: OutboundHttpService) {}
+
   async scrape(urls: string[]): Promise<ScrapedPage[]> {
     this.logger.log(`Running ReaderAgent - urls received: ${urls.length}`);
 
@@ -19,14 +21,14 @@ export class ReaderAgent {
 
     for (const url of urls.slice(0, 3)) {
       try {
-        const response = await axios.get<string>(url, {
+        const html = await this.outboundHttpService.getText(url, {
           timeout: 8000,
           headers: {
             'User-Agent': 'Mozilla/5.0',
           },
         });
 
-        const $ = cheerio.load(response.data);
+        const $ = cheerio.load(html);
         $('script, style, nav, footer, header, aside').remove();
 
         const container = $('article').first().length

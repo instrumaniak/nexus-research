@@ -1,36 +1,44 @@
 import { ConfigService } from '@nestjs/config';
+import { OutboundHttpService } from '../../outbound-http/outbound-http.service';
 import { SearchAgent } from './search.agent';
 
 describe('SearchAgent', () => {
   let agent: SearchAgent;
+  let outboundHttpService: {
+    getJson: jest.Mock;
+  };
 
   beforeEach(() => {
-    agent = new SearchAgent({
-      get: jest.fn((key: string) => {
-        if (key === 'search.provider') {
-          return 'duckduckgo';
-        }
+    outboundHttpService = {
+      getJson: jest.fn(),
+    };
 
-        return undefined;
-      }),
-    } as unknown as ConfigService);
+    agent = new SearchAgent(
+      {
+        get: jest.fn((key: string) => {
+          if (key === 'search.provider') {
+            return 'duckduckgo';
+          }
 
-    jest.restoreAllMocks();
+          return undefined;
+        }),
+      } as unknown as ConfigService,
+      outboundHttpService as unknown as OutboundHttpService,
+    );
+
+    jest.clearAllMocks();
   });
 
   it('returns at most five results with the expected shape', async () => {
-    jest.spyOn(global, 'fetch').mockResolvedValue({
-      ok: true,
-      json: jest.fn().mockResolvedValue({
-        Heading: 'NestJS',
-        AbstractURL: 'https://nestjs.com',
-        AbstractText: 'Framework overview',
-        RelatedTopics: Array.from({ length: 6 }, (_, index) => ({
-          FirstURL: `https://example.com/${index}`,
-          Text: `Result ${index} - snippet`,
-        })),
-      }),
-    } as unknown as Response);
+    outboundHttpService.getJson.mockResolvedValue({
+      Heading: 'NestJS',
+      AbstractURL: 'https://nestjs.com',
+      AbstractText: 'Framework overview',
+      RelatedTopics: Array.from({ length: 6 }, (_, index) => ({
+        FirstURL: `https://example.com/${index}`,
+        Text: `Result ${index} - snippet`,
+      })),
+    });
 
     const results = await agent.search('nestjs');
 
@@ -48,7 +56,7 @@ describe('SearchAgent', () => {
   });
 
   it('returns an empty array on network error without throwing', async () => {
-    jest.spyOn(global, 'fetch').mockRejectedValue(new Error('network down'));
+    outboundHttpService.getJson.mockRejectedValue(new Error('network down'));
 
     await expect(agent.search('nestjs')).resolves.toEqual([]);
   });

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { SearchConfig } from '../../config';
+import { OutboundHttpService } from '../../outbound-http/outbound-http.service';
 
 export interface SearchResult {
   url: string;
@@ -36,7 +37,10 @@ interface DuckDuckGoResponse {
 export class SearchAgent {
   private readonly logger = new Logger(SearchAgent.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly outboundHttpService: OutboundHttpService,
+  ) {}
 
   async search(query: string): Promise<SearchResult[]> {
     this.logger.log(`Running SearchAgent - query length: ${query.length}`);
@@ -61,18 +65,12 @@ export class SearchAgent {
   private async searchBrave(query: string): Promise<SearchResult[]> {
     const apiKey = this.configService.get<SearchConfig['providerApiKey']>('search.providerApiKey');
 
-    const response = await fetch(
+    const data = await this.outboundHttpService.getJson<BraveSearchResponse>(
       `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=5`,
       {
         headers: apiKey ? { 'X-Subscription-Token': apiKey } : {},
       },
     );
-
-    if (!response.ok) {
-      throw new Error(`Brave search failed with status ${response.status}`);
-    }
-
-    const data = (await response.json()) as BraveSearchResponse;
 
     return (data.web?.results ?? [])
       .filter(
@@ -92,15 +90,9 @@ export class SearchAgent {
   }
 
   private async searchDuckDuckGo(query: string): Promise<SearchResult[]> {
-    const response = await fetch(
+    const data = await this.outboundHttpService.getJson<DuckDuckGoResponse>(
       `https://api.duckduckgo.com/?format=json&q=${encodeURIComponent(query)}`,
     );
-
-    if (!response.ok) {
-      throw new Error(`DuckDuckGo search failed with status ${response.status}`);
-    }
-
-    const data = (await response.json()) as DuckDuckGoResponse;
     const results: SearchResult[] = [];
 
     if (data.AbstractURL && data.AbstractText) {

@@ -1,9 +1,14 @@
 import { ConfigService } from '@nestjs/config';
+import { OutboundHttpService } from '../outbound-http/outbound-http.service';
 import { AiProviderService } from './ai-provider.service';
 
 describe('AiProviderService', () => {
   let service: AiProviderService;
   let configService: ConfigService;
+  let outboundHttpService: {
+    postJson: jest.Mock;
+    streamSse: jest.Mock;
+  };
 
   beforeEach(() => {
     configService = {
@@ -20,17 +25,22 @@ describe('AiProviderService', () => {
       }),
     } as unknown as ConfigService;
 
-    service = new AiProviderService(configService);
-    jest.restoreAllMocks();
+    outboundHttpService = {
+      postJson: jest.fn(),
+      streamSse: jest.fn(),
+    };
+
+    service = new AiProviderService(
+      configService,
+      outboundHttpService as unknown as OutboundHttpService,
+    );
+    jest.clearAllMocks();
   });
 
   it('complete returns the response text', async () => {
-    jest.spyOn(global, 'fetch').mockResolvedValue({
-      ok: true,
-      json: jest.fn().mockResolvedValue({
-        choices: [{ message: { content: 'Final answer' } }],
-      }),
-    } as unknown as Response);
+    outboundHttpService.postJson.mockResolvedValue({
+      choices: [{ message: { content: 'Final answer' } }],
+    });
 
     await expect(
       service.complete({
@@ -42,24 +52,10 @@ describe('AiProviderService', () => {
   });
 
   it('stream yields parsed tokens from SSE chunks', async () => {
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream<Uint8Array>({
-      start(controller) {
-        controller.enqueue(
-          encoder.encode(
-            'data: {"choices":[{"delta":{"content":"Hel"}}]}\n\n' +
-              'data: {"choices":[{"delta":{"content":"lo"}}]}\n\n' +
-              'data: [DONE]\n\n',
-          ),
-        );
-        controller.close();
-      },
+    outboundHttpService.streamSse.mockImplementation(async function* () {
+      yield '{"choices":[{"delta":{"content":"Hel"}}]}';
+      yield '{"choices":[{"delta":{"content":"lo"}}]}';
     });
-
-    jest.spyOn(global, 'fetch').mockResolvedValue({
-      ok: true,
-      body: stream,
-    } as unknown as Response);
 
     const tokens: string[] = [];
     for await (const token of service.stream({
