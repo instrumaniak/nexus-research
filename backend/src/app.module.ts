@@ -4,6 +4,7 @@ import { APP_FILTER } from '@nestjs/core';
 import { PassportModule } from '@nestjs/passport';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { AgentsModule } from './agents/agents.module';
 import { AiProviderModule } from './ai-provider/ai-provider.module';
@@ -49,6 +50,7 @@ import {
     AiProviderModule,
     AgentsModule,
     ChatModule,
+    AdminModule,
   ],
   controllers: [],
   providers: [
