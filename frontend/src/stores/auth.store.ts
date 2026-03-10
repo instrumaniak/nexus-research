@@ -6,6 +6,7 @@ interface AccessTokenPayload {
   sub: number;
   email: string;
   role: string;
+  exp: number;
 }
 
 interface AuthState {
@@ -16,9 +17,10 @@ interface AuthState {
   logout: () => void;
   setAccessToken: (token: string | null) => void;
   initialise: () => Promise<void>;
+  getFreshToken: () => Promise<string | null>;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   accessToken: null,
   isAuthenticated: false,
@@ -71,7 +73,29 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
     }
   },
+  getFreshToken: async () => {
+    const { accessToken, initialise } = get();
+
+    if (!accessToken || isTokenExpired(accessToken)) {
+      await initialise();
+      return get().accessToken;
+    }
+
+    return accessToken;
+  },
 }));
+
+function isTokenExpired(token: string): boolean {
+  const payload = decodeAccessToken(token);
+
+  if (!payload) {
+    return true;
+  }
+
+  // Check if token expires in the next 30 seconds
+  const now = Math.floor(Date.now() / 1000);
+  return payload.exp < now + 30;
+}
 
 function hydrateUserFromToken(token: string, previousUser: User | null): User | null {
   const payload = decodeAccessToken(token);
