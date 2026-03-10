@@ -155,6 +155,18 @@ export class ChatService {
     };
   }
 
+  async verifySessionOwnership(sessionId: number, userId: number): Promise<void> {
+    const session = await this.db
+      .select({ id: sessions.id })
+      .from(sessions)
+      .where(and(eq(sessions.id, sessionId), eq(sessions.userId, userId)))
+      .get();
+
+    if (!session) {
+      throw new NotFoundException('Session not found');
+    }
+  }
+
   private buildSessionTitle(query: string): string {
     const trimmed = query.trim();
     if (trimmed.length <= 60) {

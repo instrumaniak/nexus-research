@@ -33,6 +33,10 @@ export class ChatController {
     @CurrentUser() user: User,
     @Res() response: Response,
   ): Promise<void> {
+    if (dto.sessionId) {
+      await this.chatService.verifySessionOwnership(dto.sessionId, user.id);
+    }
+
     response.setHeader('Content-Type', 'text/event-stream');
     response.setHeader('Cache-Control', 'no-cache');
     response.setHeader('Connection', 'keep-alive');
