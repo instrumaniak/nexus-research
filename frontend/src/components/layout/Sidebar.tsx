@@ -8,7 +8,7 @@ import {
   Shield,
   LogOut,
 } from 'lucide-react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/cn';
 import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
@@ -21,7 +21,8 @@ interface SidebarProps {
 
 export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { user, logout } = useAuthStore();
-  const { sessions } = useChatStore();
+  const { sessions, clearSession } = useChatStore();
+  const navigate = useNavigate();
 
   const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
 
@@ -50,6 +51,10 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
       <div className="p-2.5 shrink-0">
         <button
           title="New Chat"
+          onClick={() => {
+            clearSession();
+            navigate('/chat');
+          }}
           className={cn(
             'flex items-center gap-3 w-full rounded-md border border-input bg-card hover:bg-muted hover:text-foreground text-foreground px-2.5 py-2 transition-colors',
             collapsed && 'justify-center px-0',

@@ -6,38 +6,43 @@ import { useChatStore } from '@/stores/chat.store';
 import { Textarea } from '@/components/ui/textarea';
 
 export function ChatPage() {
-  const { sessionId } = useParams();
-  const { messages, sessions, mode, setMode, setMessages } = useChatStore();
+  const { id } = useParams<{ id: string }>();
+
+  const {
+    messages,
+    sessions,
+    mode,
+    setMode,
+    loadSession,
+    clearSession,
+    pendingInput,
+    clearPendingInput,
+  } = useChatStore();
+
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const currentSession = sessions.find((s) => s.id === Number(sessionId));
+  const currentSession = sessions.find((s) => s.id === Number(id));
 
-  // Load mock messages for session
+  // Load session from store when URL param changes
   useEffect(() => {
-    if (sessionId) {
-      setMessages([
-        {
-          id: 1,
-          role: 'user',
-          content: 'What are the main risks of quantum computing to modern encryption?',
-        },
-        {
-          id: 2,
-          role: 'assistant',
-          content:
-            "Quantum computing poses a significant threat to current cryptographic standards, particularly asymmetric (public-key) encryption like RSA and ECC.\n\nThe primary mechanism is **Shor's Algorithm**, which can efficiently factor large integers and solve discrete logarithms—the mathematical foundations of most modern public-key systems.\n\nKey risks include:\n- **Harvest Now, Decrypt Later**: Adversaries capturing encrypted data today to decrypt it once powerful quantum computers become available.\n- **Authentication Collapse**: Digital signatures securing software updates and financial transactions could be forged.\n- **Network Security**: Protocols like TLS/SSL that secure the internet would no longer provide confidentiality.",
-          sources: [
-            { title: 'NIST Quantum-Resistant Cryptography', url: 'https://nist.gov' },
-            { title: 'Cloudflare: The Quantum Threat', url: 'https://cloudflare.com' },
-          ],
-        },
-      ]);
+    if (id) {
+      loadSession(Number(id));
     } else {
-      setMessages([]);
+      clearSession();
     }
-  }, [sessionId, setMessages]);
+  }, [id, loadSession, clearSession]);
+
+  // Pick up pending input set by suggestion card clicks
+  useEffect(() => {
+    if (pendingInput) {
+      setInput(pendingInput);
+      clearPendingInput();
+      textareaRef.current?.focus();
+    }
+  }, [pendingInput, clearPendingInput]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -220,6 +225,7 @@ export function ChatPage() {
         <div className="max-w-[800px] mx-auto flex flex-col gap-3">
           <div className="relative group">
             <Textarea
+              ref={textareaRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
