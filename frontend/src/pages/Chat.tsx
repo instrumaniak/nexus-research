@@ -7,12 +7,37 @@ import { Textarea } from '@/components/ui/textarea';
 
 export function ChatPage() {
   const { sessionId } = useParams();
-  const { messages, sessions, mode, setMode } = useChatStore();
+  const { messages, sessions, mode, setMode, setMessages } = useChatStore();
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const currentSession = sessions.find((s) => s.id === Number(sessionId));
+
+  // Load mock messages for session
+  useEffect(() => {
+    if (sessionId) {
+      setMessages([
+        {
+          id: 1,
+          role: 'user',
+          content: 'What are the main risks of quantum computing to modern encryption?',
+        },
+        {
+          id: 2,
+          role: 'assistant',
+          content:
+            "Quantum computing poses a significant threat to current cryptographic standards, particularly asymmetric (public-key) encryption like RSA and ECC.\n\nThe primary mechanism is **Shor's Algorithm**, which can efficiently factor large integers and solve discrete logarithms—the mathematical foundations of most modern public-key systems.\n\nKey risks include:\n- **Harvest Now, Decrypt Later**: Adversaries capturing encrypted data today to decrypt it once powerful quantum computers become available.\n- **Authentication Collapse**: Digital signatures securing software updates and financial transactions could be forged.\n- **Network Security**: Protocols like TLS/SSL that secure the internet would no longer provide confidentiality.",
+          sources: [
+            { title: 'NIST Quantum-Resistant Cryptography', url: 'https://nist.gov' },
+            { title: 'Cloudflare: The Quantum Threat', url: 'https://cloudflare.com' },
+          ],
+        },
+      ]);
+    } else {
+      setMessages([]);
+    }
+  }, [sessionId, setMessages]);
 
   // Scroll to bottom
   useEffect(() => {
@@ -31,8 +56,58 @@ export function ChatPage() {
 
   return (
     <div className="flex flex-col h-full bg-background relative overflow-hidden">
+      {/* Top Bar */}
+      <div className="h-[52px] border-b border-border flex items-center justify-between px-5 shrink-0 bg-background/80 backdrop-blur-sm z-10">
+        <div className="flex items-center gap-3 overflow-hidden">
+          {currentSession && (
+            <h2 className="text-sm font-medium text-foreground truncate max-w-[300px] md:max-w-[500px]">
+              {currentSession.title}
+            </h2>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMode('web')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all',
+              mode === 'web'
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground hover:border-muted-foreground',
+            )}
+          >
+            <Globe size={11} /> Web Search
+          </button>
+          <button
+            disabled
+            onClick={() => setMode('kb')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all opacity-40 cursor-not-allowed pointer-events-none',
+              mode === 'kb'
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground',
+            )}
+          >
+            <Database size={11} /> KB Search{' '}
+            <span className="text-[9px] opacity-70 ml-0.5">· P2</span>
+          </button>
+          <button
+            disabled
+            onClick={() => setMode('deep')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all opacity-40 cursor-not-allowed pointer-events-none',
+              mode === 'deep'
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground',
+            )}
+          >
+            <FlaskConical size={11} /> Deep Research{' '}
+            <span className="text-[9px] opacity-70 ml-0.5">· P2</span>
+          </button>
+        </div>
+      </div>
+
       {/* Messages area */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto pt-8 pb-32 px-4 md:px-8 space-y-8">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto pb-32 pt-4 px-4 md:px-8 space-y-8">
         {messages.length === 0 ? (
           <div className="max-w-[600px] mx-auto mt-20 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
             <h1 className="text-3xl font-bold tracking-tight text-foreground mb-3">
@@ -141,45 +216,8 @@ export function ChatPage() {
       </div>
 
       {/* Input bar */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 md:p-8 bg-gradient-to-t from-background via-background to-transparent pt-12">
+      <div className="shrink-0 p-4 md:p-8 bg-gradient-to-t from-background via-background to-transparent pt-12">
         <div className="max-w-[800px] mx-auto flex flex-col gap-3">
-          {/* Mode pills */}
-          <div className="flex items-center gap-2 px-1">
-            <button
-              onClick={() => setMode('general')}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all',
-                mode === 'general'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80',
-              )}
-            >
-              <FlaskConical size={14} /> General
-            </button>
-            <button
-              onClick={() => setMode('web')}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all',
-                mode === 'web'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80',
-              )}
-            >
-              <Globe size={14} /> Web Search
-            </button>
-            <button
-              onClick={() => setMode('kb')}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all',
-                mode === 'kb'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80',
-              )}
-            >
-              <Database size={14} /> Knowledge Base
-            </button>
-          </div>
-
           <div className="relative group">
             <Textarea
               value={input}
@@ -202,12 +240,9 @@ export function ChatPage() {
               <Send size={16} />
             </button>
           </div>
-          {currentSession && (
-            <p className="text-[11px] text-center text-muted-foreground">
-              Current Research:{' '}
-              <span className="text-foreground/70 font-medium">{currentSession.title}</span>
-            </p>
-          )}
+          <p className="text-[11px] text-center text-muted-foreground/50">
+            Nexus may make mistakes. Always verify important information from sources.
+          </p>
         </div>
       </div>
     </div>

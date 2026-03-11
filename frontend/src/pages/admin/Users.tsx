@@ -48,6 +48,38 @@ const mockUsers: AdminUser[] = [
     status: 'BANNED',
     joined: 'Feb 10',
   },
+  {
+    id: 5,
+    name: 'Charlie',
+    email: 'charlie@example.com',
+    role: 'User',
+    status: 'ACTIVE',
+    joined: 'Mar 8',
+  },
+  {
+    id: 6,
+    name: 'Dave',
+    email: 'dave@example.com',
+    role: 'User',
+    status: 'PENDING',
+    joined: 'Mar 10',
+  },
+  {
+    id: 7,
+    name: 'Frank',
+    email: 'frank@example.com',
+    role: 'User',
+    status: 'ACTIVE',
+    joined: 'Mar 11',
+  },
+  {
+    id: 8,
+    name: 'Grace',
+    email: 'grace@example.com',
+    role: 'User',
+    status: 'PENDING',
+    joined: 'Mar 11',
+  },
 ];
 
 export function AdminUsersPage() {

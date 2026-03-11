@@ -157,21 +157,17 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
 
       {/* Footer / User Profile */}
       <div className="flex flex-col gap-2 p-2 shrink-0 border-t border-sidebar-border">
-        {/* Only show theme toggle when collapsed since user section is squashed */}
-        {collapsed ? (
-          <div className="flex justify-center -mb-1 mt-1">
-            <ThemeToggle />
-          </div>
-        ) : null}
+        {/* Theme toggle */}
+        <div
+          className={cn('flex items-center px-1', collapsed ? 'justify-center' : 'justify-start')}
+        >
+          <ThemeToggle />
+        </div>
 
-        <div className="flex flex-col px-1 pt-2 pb-1 gap-2">
-          {!collapsed && (
-            <div className="flex items-center gap-2 mb-1">
-              <ThemeToggle />
-              <span className="text-[11px] text-muted-foreground font-medium">Appearance</span>
-            </div>
-          )}
-          <div className={cn('flex items-center gap-3 w-full', collapsed && 'justify-center')}>
+        <div className="flex flex-col px-1 pt-1 pb-1 gap-2">
+          <div
+            className={cn('flex items-center gap-3 w-full', collapsed && 'flex-col justify-center')}
+          >
             <div className="flex items-center justify-center w-[28px] h-[28px] rounded-full bg-primary/20 text-primary font-semibold text-xs shrink-0">
               {userInitial}
             </div>
@@ -189,7 +185,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               <button
                 onClick={logout}
                 title="Log out"
-                className="mt-4 flex items-center justify-center text-muted-foreground hover:text-foreground"
+                className="flex items-center justify-center text-muted-foreground hover:text-foreground p-1"
               >
                 <LogOut size={16} />
               </button>

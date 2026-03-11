@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-
-export type ChatMode = 'general' | 'web' | 'kb' | 'deep' | 'WEB_SEARCH';
+import { ChatMode } from '@/types';
 
 export interface ChatSource {
   title: string;
@@ -31,6 +30,7 @@ interface ChatStore {
   sources: ChatSource[];
   setMode: (mode: ChatMode) => void;
   setActiveSession: (id: number | null) => void;
+  setMessages: (messages: Message[]) => void;
 }
 
 export const useChatStore = create<ChatStore>((set) => ({
@@ -61,4 +61,5 @@ export const useChatStore = create<ChatStore>((set) => ({
   sources: [],
   setMode: (mode) => set({ mode }),
   setActiveSession: (id) => set({ activeSessionId: id }),
+  setMessages: (messages: Message[]) => set({ messages }),
 }));
