@@ -47,7 +47,18 @@ apiClient.interceptors.response.use(
       });
 
       if (!response.ok) {
-        throw new Error('Refresh failed');
+        // Only logout if it's a 401/403 or if the token is already expired
+        if (
+          response.status === 401 ||
+          response.status === 403 ||
+          useAuthStore.getState().isTokenExpired()
+        ) {
+          useAuthStore.getState().logout();
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.location.assign('/login');
+          }
+        }
+        throw error;
       }
 
       const data = (await response.json()) as { accessToken: string };
@@ -58,10 +69,13 @@ apiClient.interceptors.response.use(
       originalRequest.headers = headers;
 
       return apiClient(originalRequest);
-    } catch {
-      useAuthStore.getState().logout();
-      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-        window.location.assign('/login');
+    } catch (e) {
+      // If it's a network error/timeout, only logout if the token is dead
+      if (useAuthStore.getState().isTokenExpired()) {
+        useAuthStore.getState().logout();
+        if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.assign('/login');
+        }
       }
 
       throw error;

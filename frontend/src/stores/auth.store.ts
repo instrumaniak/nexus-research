@@ -18,6 +18,7 @@ interface AuthState {
   setAccessToken: (token: string | null) => void;
   initialise: () => Promise<void>;
   getFreshToken: () => Promise<string | null>;
+  isTokenExpired: () => boolean;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -43,6 +44,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       isAuthenticated: !!token,
     })),
   initialise: async () => {
+    const { accessToken } = get();
     try {
       const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
         method: 'POST',
@@ -50,11 +52,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
 
       if (!response.ok) {
-        set({
-          accessToken: null,
-          user: null,
-          isAuthenticated: false,
-        });
+        // Only clear state if it's a definitive auth failure (401/403)
+        // or if we don't have a valid token anymore anyway.
+        if (
+          response.status === 401 ||
+          response.status === 403 ||
+          !accessToken ||
+          isTokenExpired(accessToken)
+        ) {
+          set({
+            accessToken: null,
+            user: null,
+            isAuthenticated: false,
+          });
+        }
         return;
       }
 
@@ -66,26 +77,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isAuthenticated: !!data.accessToken,
       }));
     } catch {
-      set({
-        accessToken: null,
-        user: null,
-        isAuthenticated: false,
-      });
+      // On network errors/hiccups, only logout if the current token is already dead
+      if (!accessToken || isTokenExpired(accessToken)) {
+        set({
+          accessToken: null,
+          user: null,
+          isAuthenticated: false,
+        });
+      }
     }
   },
   getFreshToken: async () => {
     const { accessToken, initialise } = get();
 
-    if (!accessToken || isTokenExpired(accessToken)) {
+    if (!accessToken || shouldRefreshToken(accessToken)) {
       await initialise();
       return get().accessToken;
     }
 
     return accessToken;
   },
+  isTokenExpired: () => {
+    const { accessToken } = get();
+    return !accessToken || isTokenExpired(accessToken);
+  },
 }));
 
 function isTokenExpired(token: string): boolean {
+  const payload = decodeAccessToken(token);
+
+  if (!payload) {
+    return true;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  return payload.exp < now;
+}
+
+function shouldRefreshToken(token: string): boolean {
   const payload = decodeAccessToken(token);
 
   if (!payload) {
