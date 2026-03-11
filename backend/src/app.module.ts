@@ -27,7 +27,7 @@ import {
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
+      envFilePath: ['.env', '../.env'],
       validate: validateEnv,
       load: [
         appConfig,

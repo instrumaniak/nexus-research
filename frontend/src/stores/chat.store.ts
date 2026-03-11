@@ -1,109 +1,64 @@
 import { create } from 'zustand';
-import type { ChatMode, Message, SessionSummary, Source } from '@/types';
 
-interface ChatState {
-  sessions: SessionSummary[];
-  activeSessionId: number | null;
-  messages: Message[];
-  streamingContent: string;
-  isStreaming: boolean;
+export type ChatMode = 'general' | 'web' | 'kb' | 'deep' | 'WEB_SEARCH';
+
+export interface ChatSource {
+  title: string;
+  url: string;
+}
+export interface Message {
+  id: number;
+  role: 'user' | 'assistant';
+  content: string;
+  sources?: ChatSource[];
+}
+export interface Session {
+  id: number;
+  title: string;
   mode: ChatMode;
-  progressStep: string | null;
-  progressHistory: string[];
-  sources: Source[];
-  setMode: (mode: ChatMode) => void;
-  startStream: (query: string) => void;
-  appendToken: (token: string) => void;
-  finaliseStream: (sources: Source[]) => void;
-  setProgressStep: (message: string) => void;
-  setSessions: (sessions: SessionSummary[]) => void;
-  setActiveSession: (id: number | null, messages: Message[]) => void;
-  addSession: (session: SessionSummary) => void;
-  setActiveSessionId: (id: number | null) => void;
-  setMessages: (messages: Message[]) => void;
-  resetConversation: () => void;
+  updatedAt: string;
 }
 
-export const useChatStore = create<ChatState>((set) => ({
-  sessions: [],
+interface ChatStore {
+  sessions: Session[];
+  activeSessionId: number | null;
+  messages: Message[];
+  mode: ChatMode;
+  isStreaming: boolean;
+  streamingContent: string;
+  progressStep: string | null;
+  progressHistory: string[];
+  sources: ChatSource[];
+  setMode: (mode: ChatMode) => void;
+  setActiveSession: (id: number | null) => void;
+}
+
+export const useChatStore = create<ChatStore>((set) => ({
+  sessions: [
+    {
+      id: 1,
+      title: "Quantum computing's threat to RSA encryption",
+      mode: 'web',
+      updatedAt: '2h ago',
+    },
+    {
+      id: 2,
+      title: 'React Server Components vs traditional SSR',
+      mode: 'web',
+      updatedAt: 'Yesterday',
+    },
+    { id: 3, title: 'SQLite in production best practices', mode: 'web', updatedAt: '2d ago' },
+    { id: 4, title: 'TypeScript strict mode gotchas explained', mode: 'web', updatedAt: '3d ago' },
+    { id: 5, title: 'NestJS dependency injection deep dive', mode: 'web', updatedAt: '5d ago' },
+  ],
   activeSessionId: null,
   messages: [],
-  streamingContent: '',
+  mode: 'web',
   isStreaming: false,
-  mode: 'WEB_SEARCH',
+  streamingContent: '',
   progressStep: null,
   progressHistory: [],
   sources: [],
   setMode: (mode) => set({ mode }),
-  startStream: (query) =>
-    set((state) => ({
-      messages: [
-        ...state.messages,
-        {
-          id: `user-${Date.now()}`,
-          role: 'user',
-          content: query,
-          sources: [],
-          createdAt: new Date().toISOString(),
-        },
-      ],
-      streamingContent: '',
-      isStreaming: true,
-      progressStep: null,
-      progressHistory: [],
-      sources: [],
-    })),
-  appendToken: (token) =>
-    set((state) => ({
-      streamingContent: `${state.streamingContent}${token}`,
-    })),
-  finaliseStream: (sources) =>
-    set((state) => ({
-      messages: [
-        ...state.messages,
-        {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          content: state.streamingContent,
-          sources,
-          createdAt: new Date().toISOString(),
-        },
-      ],
-      streamingContent: '',
-      isStreaming: false,
-      progressStep: null,
-      sources,
-    })),
-  setProgressStep: (message) =>
-    set((state) => ({
-      progressStep: message,
-      progressHistory: [...state.progressHistory, message],
-    })),
-  setSessions: (sessions) => set({ sessions }),
-  setActiveSession: (id, messages) =>
-    set({
-      activeSessionId: id,
-      messages,
-      streamingContent: '',
-      isStreaming: false,
-      progressStep: null,
-      progressHistory: [],
-      sources: [],
-    }),
-  addSession: (session) =>
-    set((state) => ({
-      sessions: [session, ...state.sessions.filter((item) => item.id !== session.id)],
-    })),
-  setActiveSessionId: (id) => set({ activeSessionId: id }),
-  setMessages: (messages) => set({ messages }),
-  resetConversation: () =>
-    set({
-      activeSessionId: null,
-      messages: [],
-      streamingContent: '',
-      isStreaming: false,
-      progressStep: null,
-      progressHistory: [],
-      sources: [],
-    }),
+  setActiveSession: (id) => set({ activeSessionId: id }),
 }));
