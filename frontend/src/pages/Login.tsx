@@ -7,11 +7,11 @@ import { useAuthStore } from '@/stores/auth.store';
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const login = useAuthStore((s) => s.login);
+  const { login, isLoading } = useAuthStore();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    login('user@example.com', 'password');
+    await login('user@example.com', 'password');
     navigate('/chat');
   };
 
@@ -55,8 +55,21 @@ export function LoginPage() {
             <Input id="password" type="password" />
           </div>
 
-          <Button type="submit" variant="default" size="lg" className="w-full mt-2">
-            Sign in
+          <Button
+            type="submit"
+            variant="default"
+            size="lg"
+            className="w-full mt-2"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                Signing in…
+              </span>
+            ) : (
+              'Sign in'
+            )}
           </Button>
         </form>
       </div>

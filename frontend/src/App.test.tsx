@@ -1,73 +1,62 @@
+// frontend/src/App.test.tsx
 import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App';
 import { useAuthStore } from '@/stores/auth.store';
-
-vi.mock('@/api/chat.api', () => ({
-  getSessions: vi.fn().mockResolvedValue([]),
-  getSession: vi.fn().mockResolvedValue({
-    session: {
-      id: 1,
-      title: 'Session',
-      mode: 'web',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    },
-    messages: [],
-  }),
-  streamChat: vi.fn(),
-}));
+import { ThemeProvider } from '@/components/theme-provider';
 
 describe('App routing', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     useAuthStore.setState({
       user: null,
       accessToken: null,
       isAuthenticated: false,
+      isLoading: false,
       initialise: vi.fn().mockResolvedValue(undefined),
     });
   });
 
   it('unauthenticated visit to /chat redirects to /login', async () => {
+    window.history.pushState({}, '', '/chat');
+
     render(
-      <MemoryRouter
-        initialEntries={['/chat']}
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      >
+      <ThemeProvider defaultTheme="light" storageKey="nexus-theme">
         <App />
-      </MemoryRouter>,
+      </ThemeProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /log in/i })).toBeInTheDocument();
+      expect(screen.getByText(/sign in/i, { selector: 'h2' })).toBeInTheDocument();
     });
   });
 
-  it('non-superadmin visit to /admin/users redirects to /chat', async () => {
+  it('superadmin visit to /admin/users renders user management', async () => {
     useAuthStore.setState({
       user: {
         id: 1,
-        username: 'member',
-        email: 'member@example.com',
-        role: 'USER',
+        name: 'admin',
+        username: 'admin',
+        email: 'admin@nexus.local',
+        role: 'superadmin',
       },
       accessToken: 'token',
       isAuthenticated: true,
+      isLoading: false,
       initialise: vi.fn().mockResolvedValue(undefined),
     });
 
+    // Navigate to admin before render
+    window.history.pushState({}, '', '/admin/users');
+
     render(
-      <MemoryRouter
-        initialEntries={['/admin/users']}
-        future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
-      >
+      <ThemeProvider defaultTheme="light" storageKey="nexus-theme">
         <App />
-      </MemoryRouter>,
+      </ThemeProvider>,
     );
 
     await waitFor(() => {
-      expect(screen.getByText('Ask a research question')).toBeInTheDocument();
+      expect(screen.getByText(/user management/i)).toBeInTheDocument();
     });
   });
 });

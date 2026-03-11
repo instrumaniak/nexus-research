@@ -12,7 +12,9 @@ interface AuthStore {
   user: User | null;
   accessToken: string | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => void; // stub: always succeeds
+  isLoading: boolean;
+
+  login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   initialise: () => Promise<void>;
   getFreshToken: () => Promise<string | null>;
@@ -24,11 +26,14 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   accessToken: null,
   isAuthenticated: false,
-  login: (email, password) => {
-    // Mock login ignores credentials in F1
-    void email;
-    void password;
+  isLoading: false,
+
+  login: async () => {
+    set({ isLoading: true });
+    // Simulate network delay — makes loading state visible and testable
+    await new Promise((r) => setTimeout(r, 600));
     set({
+      isLoading: false,
       isAuthenticated: true,
       accessToken: 'stub-token',
       user: {
@@ -40,7 +45,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       },
     });
   },
+
   logout: () => set({ user: null, accessToken: null, isAuthenticated: false }),
+
+  // F3 stubs — do not implement yet
   initialise: async () => {},
   getFreshToken: async () => get().accessToken,
   isTokenExpired: () => false,
