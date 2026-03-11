@@ -23,7 +23,7 @@ type StreamEvent =
   | { step: 'error'; message: string };
 
 export async function streamChat(payload: StreamPayload, handlers: StreamHandlers): Promise<void> {
-  const token = useAuthStore.getState().accessToken;
+  const token = await useAuthStore.getState().getFreshToken();
 
   const response = await fetch(`${API_BASE_URL}/chat/stream`, {
     method: 'POST',

@@ -132,6 +132,7 @@ export default function Chat() {
           onDone: (resultSources) => finaliseStream(resultSources),
           onError: (message) => {
             setError(message);
+            finaliseStream([]);
           },
         },
       );

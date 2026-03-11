@@ -78,14 +78,19 @@ export class AiProviderService {
   }
 
   private buildHeaders(): Record<string, string> {
-    const apiKey = this.requireConfig<AiConfig['apiKey']>('ai.apiKey');
+    const apiKey = this.configService.get<AiConfig['apiKey']>('ai.apiKey');
 
-    return {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
       'HTTP-Referer': 'https://raziur.com',
       'X-Title': 'Nexus',
     };
+
+    if (apiKey) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
+
+    return headers;
   }
 
   private extractContent(

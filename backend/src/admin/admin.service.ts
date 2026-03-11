@@ -60,6 +60,10 @@ export class AdminService {
   async banUser(id: number): Promise<UserSummary> {
     const user = await this.getUserById(id);
 
+    if (user.role === 'SUPERADMIN') {
+      throw new BadRequestException('Cannot ban a superadmin account');
+    }
+
     if (user.status === 'BANNED') {
       throw new BadRequestException('User is already banned');
     }

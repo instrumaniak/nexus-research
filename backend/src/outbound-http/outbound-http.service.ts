@@ -95,12 +95,12 @@ export class OutboundHttpService {
         }
 
         buffer += decoder.decode(value, { stream: true });
-        const events = buffer.split('\n\n');
+        const events = buffer.split(/\r?\n\r?\n/);
         buffer = events.pop() ?? '';
 
         for (const event of events) {
           const lines = event
-            .split('\n')
+            .split(/\r?\n/)
             .map((line) => line.trim())
             .filter((line) => line.startsWith('data:'));
 
@@ -121,7 +121,7 @@ export class OutboundHttpService {
         return;
       }
 
-      for (const line of remaining.split('\n')) {
+      for (const line of remaining.split(/\r?\n/)) {
         const trimmed = line.trim();
         if (!trimmed.startsWith('data:')) {
           continue;
