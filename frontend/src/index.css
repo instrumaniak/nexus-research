@@ -1,51 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    /* Base surfaces */
+    --background:         0 0% 100%;
+    --foreground:         240 10% 4%;
+
+    /* Card / panel surfaces */
+    --card:               0 0% 98%;
+    --card-foreground:    240 10% 4%;
+
+    /* Popover */
+    --popover:            0 0% 100%;
+    --popover-foreground: 240 10% 4%;
+
+    /* Primary — Violet */
+    --primary:            263 70% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary */
+    --secondary:          240 5% 94%;
+    --secondary-foreground: 240 6% 10%;
+
+    /* Muted */
+    --muted:              240 5% 95%;
+    --muted-foreground:   240 4% 46%;
+
+    /* Accent */
+    --accent:             263 70% 97%;
+    --accent-foreground:  263 70% 40%;
+
+    /* Destructive */
+    --destructive:        0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Status colours */
+    --success:            158 64% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning:            38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Chrome */
+    --border:             240 6% 90%;
+    --input:              240 6% 90%;
+    --ring:               263 70% 50%;
+
+    /* Geometry */
+    --radius:             0.5rem;
+
+    /* Sidebar */
+    --sidebar-background: 240 5% 98%;
+    --sidebar-border:     240 6% 90%;
+    --sidebar-width:      14rem;
+    --sidebar-width-icon: 3.25rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background:         240 10% 4%;
+    --foreground:         0 0% 98%;
+
+    --card:               240 8% 7%;
+    --card-foreground:    0 0% 98%;
+
+    --popover:            240 8% 7%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Primary — Violet (lighter in dark for contrast) */
+    --primary:            263 80% 70%;
+    --primary-foreground: 263 80% 10%;
+
+    --secondary:          240 4% 16%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted:              240 4% 12%;
+    --muted-foreground:   240 5% 60%;
+
+    --accent:             263 40% 16%;
+    --accent-foreground:  263 80% 75%;
+
+    --destructive:        0 63% 38%;
+    --destructive-foreground: 0 0% 98%;
+
+    --success:            158 55% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning:            38 80% 52%;
+    --warning-foreground: 0 0% 100%;
+
+    --border:             240 4% 18%;
+    --input:              240 4% 18%;
+    --ring:               263 80% 70%;
+
+    --sidebar-background: 240 10% 5%;
+    --sidebar-border:     240 4% 13%;
   }
 }
 
@@ -53,7 +103,18 @@
   * {
     @apply border-border;
   }
-  body {
-    @apply bg-background text-foreground antialiased;
+  html {
+    font-family: 'Outfit', sans-serif;
   }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Outfit', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Thin scrollbar everywhere */
+  ::-webkit-scrollbar         { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track   { background: transparent; }
+  ::-webkit-scrollbar-thumb   { background: hsl(var(--border)); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
 }

@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores/auth.store';
 export function RequireSuperadmin() {
   const user = useAuthStore((state) => state.user);
 
-  if (user?.role !== 'SUPERADMIN') {
+  if (user?.role.toUpperCase() !== 'SUPERADMIN') {
     return <Navigate to="/chat" replace />;
   }
 

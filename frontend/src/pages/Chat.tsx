@@ -1,414 +1,252 @@
-import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { getSession, getSessions, streamChat } from '@/api/chat.api';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { formatRelativeTime } from '@/lib/time';
+import { useEffect, useRef, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { Globe, Database, FlaskConical, Send, ExternalLink } from 'lucide-react';
+import { cn } from '@/lib/cn';
 import { useChatStore } from '@/stores/chat.store';
-import type { ChatMode, Message, SessionSummary } from '@/types';
+import { Textarea } from '@/components/ui/textarea';
 
-const MODE_OPTIONS: Array<{
-  mode: ChatMode;
-  label: string;
-  icon: string;
-  disabled?: boolean;
-}> = [
-  { mode: 'WEB_SEARCH', label: 'Web Search', icon: '🌐' },
-  { mode: 'KB_SEARCH', label: 'KB Search', icon: '📚', disabled: true },
-  { mode: 'DEEP_RESEARCH', label: 'Deep Research', icon: '🔬', disabled: true },
-];
-
-export default function Chat() {
-  const navigate = useNavigate();
+export function ChatPage() {
   const { sessionId } = useParams();
-  const numericSessionId = sessionId ? Number(sessionId) : null;
-  const {
-    sessions,
-    messages,
-    streamingContent,
-    isStreaming,
-    mode,
-    progressStep,
-    progressHistory,
-    sources,
-    activeSessionId,
-    setMode,
-    startStream,
-    appendToken,
-    finaliseStream,
-    setProgressStep,
-    setSessions,
-    setActiveSession,
-    setActiveSessionId,
-    resetConversation,
-  } = useChatStore();
-  const [query, setQuery] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [isLoadingSessions, setIsLoadingSessions] = useState(true);
-  const [isLoadingSession, setIsLoadingSession] = useState(false);
-  const [kbMessage, setKbMessage] = useState<string | null>(null);
+  const { messages, sessions, mode, setMode, setMessages } = useChatStore();
+  const [input, setInput] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  const isUrlInput = useMemo(() => /^https?:\/\//.test(query.trim()), [query]);
+  const currentSession = sessions.find((s) => s.id === Number(sessionId));
 
+  // Load mock messages for session
   useEffect(() => {
-    let active = true;
-
-    void (async () => {
-      try {
-        const data = await getSessions();
-        if (active) {
-          setSessions(data);
-        }
-      } catch {
-        if (active) {
-          setError('Failed to load sessions');
-        }
-      } finally {
-        if (active) {
-          setIsLoadingSessions(false);
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [setSessions]);
-
-  useEffect(() => {
-    if (!numericSessionId) {
-      setActiveSessionId(null);
-      return;
-    }
-
-    let active = true;
-    setIsLoadingSession(true);
-
-    void (async () => {
-      try {
-        const data = await getSession(numericSessionId);
-        if (active) {
-          setActiveSession(data.session.id, data.messages);
-        }
-      } catch {
-        if (active) {
-          setError('Failed to load that session');
-          navigate('/chat');
-        }
-      } finally {
-        if (active) {
-          setIsLoadingSession(false);
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [navigate, numericSessionId, setActiveSession, setActiveSessionId]);
-
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const trimmedQuery = query.trim();
-    if (!trimmedQuery || isStreaming) {
-      return;
-    }
-
-    setError(null);
-    setKbMessage(null);
-    startStream(trimmedQuery);
-    setQuery('');
-
-    try {
-      await streamChat(
+    if (sessionId) {
+      setMessages([
         {
-          query: trimmedQuery,
-          mode,
-          sessionId: activeSessionId,
+          id: 1,
+          role: 'user',
+          content: 'What are the main risks of quantum computing to modern encryption?',
         },
         {
-          onStep: (message) => setProgressStep(message),
-          onToken: (token) => appendToken(token),
-          onDone: (resultSources) => finaliseStream(resultSources),
-          onError: (message) => {
-            setError(message);
-            finaliseStream([]);
-          },
+          id: 2,
+          role: 'assistant',
+          content:
+            "Quantum computing poses a significant threat to current cryptographic standards, particularly asymmetric (public-key) encryption like RSA and ECC.\n\nThe primary mechanism is **Shor's Algorithm**, which can efficiently factor large integers and solve discrete logarithms—the mathematical foundations of most modern public-key systems.\n\nKey risks include:\n- **Harvest Now, Decrypt Later**: Adversaries capturing encrypted data today to decrypt it once powerful quantum computers become available.\n- **Authentication Collapse**: Digital signatures securing software updates and financial transactions could be forged.\n- **Network Security**: Protocols like TLS/SSL that secure the internet would no longer provide confidentiality.",
+          sources: [
+            { title: 'NIST Quantum-Resistant Cryptography', url: 'https://nist.gov' },
+            { title: 'Cloudflare: The Quantum Threat', url: 'https://cloudflare.com' },
+          ],
         },
-      );
-
-      const refreshedSessions = await getSessions();
-      setSessions(refreshedSessions);
-
-      if (!activeSessionId && refreshedSessions[0]) {
-        setActiveSessionId(refreshedSessions[0].id);
-        navigate(`/chat/${refreshedSessions[0].id}`, { replace: true });
-      }
-    } catch (streamError) {
-      if (streamError instanceof Error) {
-        setError(streamError.message);
-      } else {
-        setError('Failed to stream response');
-      }
+      ]);
+    } else {
+      setMessages([]);
     }
-  };
+  }, [sessionId, setMessages]);
 
-  const handleTextareaKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      void handleSubmit(event as unknown as FormEvent<HTMLFormElement>);
+  // Scroll to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  };
+  }, [messages, isTyping]);
 
-  const handleNewChat = () => {
-    resetConversation();
-    navigate('/chat');
+  const handleSend = () => {
+    if (!input.trim()) return;
+    // In Phase F1 this is purely UI mock
+    setInput('');
+    setIsTyping(true);
+    setTimeout(() => setIsTyping(false), 2000);
   };
 
   return (
-    <AppLayout>
-      <div className="flex h-[calc(100vh-73px)] flex-col lg:flex-row">
-        <aside className="w-full border-b border-slate-800 bg-slate-900/60 p-5 lg:w-80 lg:border-b-0 lg:border-r">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">Sessions</p>
-              <h2 className="mt-2 font-serif text-2xl text-slate-50">Recent research</h2>
-            </div>
-            <button
-              type="button"
-              onClick={handleNewChat}
-              className="rounded-full border border-slate-700 px-4 py-2 text-sm text-slate-200 transition hover:border-cyan-400"
-            >
-              New chat
-            </button>
-          </div>
-
-          <div className="mt-5 space-y-3">
-            {isLoadingSessions ? (
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, index) => (
-                  <div
-                    key={index}
-                    className="h-20 animate-pulse rounded-2xl border border-slate-800 bg-slate-950/60"
-                  />
-                ))}
-              </div>
-            ) : sessions.length === 0 ? (
-              <p className="rounded-2xl border border-dashed border-slate-700 px-4 py-5 text-sm text-slate-400">
-                No saved sessions yet.
-              </p>
-            ) : (
-              sessions.map((session) => (
-                <SessionButton
-                  key={session.id}
-                  session={session}
-                  isActive={session.id === numericSessionId}
-                  onClick={() => navigate(`/chat/${session.id}`)}
-                />
-              ))
+    <div className="flex flex-col h-full bg-background relative overflow-hidden">
+      {/* Top Bar */}
+      <div className="h-[52px] border-b border-border flex items-center justify-between px-5 shrink-0 bg-background/80 backdrop-blur-sm z-10">
+        <div className="flex items-center gap-3 overflow-hidden">
+          {currentSession && (
+            <h2 className="text-sm font-medium text-foreground truncate max-w-[300px] md:max-w-[500px]">
+              {currentSession.title}
+            </h2>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMode('web')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all',
+              mode === 'web'
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground hover:border-muted-foreground',
             )}
-          </div>
-        </aside>
+          >
+            <Globe size={11} /> Web Search
+          </button>
+          <button
+            disabled
+            onClick={() => setMode('kb')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all opacity-40 cursor-not-allowed pointer-events-none',
+              mode === 'kb'
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground',
+            )}
+          >
+            <Database size={11} /> KB Search{' '}
+            <span className="text-[9px] opacity-70 ml-0.5">· P2</span>
+          </button>
+          <button
+            disabled
+            onClick={() => setMode('deep')}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all opacity-40 cursor-not-allowed pointer-events-none',
+              mode === 'deep'
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground',
+            )}
+          >
+            <FlaskConical size={11} /> Deep Research{' '}
+            <span className="text-[9px] opacity-70 ml-0.5">· P2</span>
+          </button>
+        </div>
+      </div>
 
-        <section className="flex min-h-0 flex-1 flex-col">
-          <div className="border-b border-slate-800 bg-slate-950/70 px-5 py-4 md:px-8">
-            <div className="flex flex-wrap gap-3">
-              {MODE_OPTIONS.map((option) => (
+      {/* Messages area */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto pb-32 pt-4 px-4 md:px-8 space-y-8">
+        {messages.length === 0 ? (
+          <div className="max-w-[600px] mx-auto mt-20 text-center animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <h1 className="text-3xl font-bold tracking-tight text-foreground mb-3">
+              What are we researching today?
+            </h1>
+            <p className="text-muted-foreground text-lg mb-8">
+              Nexus helps you synthesis information from the web and your knowledge base.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-left">
+              {[
+                "Explain Quantum Computing like I'm five",
+                'Compare NestJS vs Axum for microservices',
+                'Summarise the latest research on solid-state batteries',
+                'Find open-source alternatives to Airtable',
+              ].map((q) => (
                 <button
-                  key={option.mode}
-                  type="button"
-                  disabled={option.disabled}
-                  title={option.disabled ? 'Coming soon' : undefined}
-                  onClick={() => setMode(option.mode)}
-                  className={`rounded-full px-4 py-2 text-sm transition ${
-                    mode === option.mode
-                      ? 'bg-cyan-400 text-slate-950'
-                      : option.disabled
-                        ? 'cursor-not-allowed border border-slate-800 text-slate-500'
-                        : 'border border-slate-700 text-slate-200 hover:border-cyan-400'
-                  }`}
+                  key={q}
+                  onClick={() => setInput(q)}
+                  className="p-4 bg-card border border-border rounded-xl text-sm hover:border-primary/50 hover:bg-muted/50 transition-all text-muted-foreground hover:text-foreground"
                 >
-                  <span className="mr-2" aria-hidden="true">
-                    {option.icon}
-                  </span>
-                  {option.label}
+                  {q}
                 </button>
               ))}
             </div>
           </div>
-
-          <div className="min-h-0 flex-1 overflow-y-auto px-5 py-6 md:px-8">
-            {error ? (
-              <p className="mb-4 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-                {error}
-              </p>
-            ) : null}
-            {kbMessage ? (
-              <p className="mb-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
-                {kbMessage}
-              </p>
-            ) : null}
-
-            {isLoadingSession ? (
-              <div className="space-y-4">
-                <div className="h-24 animate-pulse rounded-[1.5rem] border border-slate-800 bg-slate-900/60" />
-                <div className="h-40 animate-pulse rounded-[1.5rem] border border-slate-800 bg-slate-900/60" />
-              </div>
-            ) : messages.length === 0 && !isStreaming ? (
-              <div className="rounded-[2rem] border border-dashed border-slate-700 bg-slate-900/40 p-8 text-center">
-                <p className="text-xs uppercase tracking-[0.35em] text-cyan-300">Web Search</p>
-                <h1 className="mt-4 font-serif text-4xl text-slate-50">Ask a research question</h1>
-                <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-slate-400">
-                  Submit a question or paste a URL. Nexus will search, read, summarise, and stream
-                  back an answer with cited sources.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-5">
-                {messages.map((message) => (
-                  <MessageCard
-                    key={message.id}
-                    message={message}
-                    onSaveToKb={() => setKbMessage('Coming in Phase 2')}
-                  />
-                ))}
-
-                {progressHistory.length > 0 ? (
-                  <div className="rounded-[1.5rem] border border-slate-800 bg-slate-900/50 p-4">
-                    <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">Progress</p>
-                    <ol className="mt-3 space-y-2 text-sm text-slate-300">
-                      {progressHistory.map((step, index) => (
-                        <li key={`${step}-${index}`}>{step}</li>
+        ) : (
+          <div className="max-w-[800px] mx-auto space-y-8">
+            {messages.map((m) => (
+              <div
+                key={m.id}
+                className={cn(
+                  'group flex w-full gap-4 animate-in fade-in duration-500',
+                  m.role === 'user' ? 'justify-end' : 'justify-start',
+                )}
+              >
+                {m.role === 'assistant' && (
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 mt-1">
+                    <span className="text-xs font-bold text-primary">N</span>
+                  </div>
+                )}
+                <div
+                  className={cn(
+                    'flex flex-col gap-2 max-w-[85%]',
+                    m.role === 'user' ? 'items-end' : 'items-start',
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'px-4 py-3 rounded-2xl text-[14.5px] leading-relaxed',
+                      m.role === 'user'
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'bg-card border border-border text-foreground shadow-sm',
+                    )}
+                  >
+                    {m.content.split('\n').map((line, i) => (
+                      <p key={i} className={cn(line ? 'mb-4 last:mb-0' : 'h-4')}>
+                        {line}
+                      </p>
+                    ))}
+                  </div>
+                  {m.role === 'assistant' && m.sources && m.sources.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-1">
+                      {m.sources.map((s, i) => (
+                        <a
+                          key={i}
+                          href={s.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 px-2 py-1 bg-muted/50 border border-border rounded-md text-[11px] text-muted-foreground hover:text-primary hover:border-primary/30 transition-colors"
+                        >
+                          <ExternalLink size={10} />
+                          {s.title}
+                        </a>
                       ))}
-                    </ol>
-                  </div>
-                ) : null}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
 
-                {isStreaming ? (
-                  <div className="rounded-[1.75rem] border border-cyan-400/20 bg-slate-900/80 p-5">
-                    <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">Assistant</p>
-                    {progressStep ? (
-                      <p className="mt-2 text-sm text-cyan-100">{progressStep}</p>
-                    ) : null}
-                    <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-100">
-                      {streamingContent || 'Preparing response...'}
-                    </p>
+            {isTyping && (
+              <div className="flex gap-4 animate-pulse">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                  <span className="text-xs font-bold text-primary">N</span>
+                </div>
+                <div className="bg-card border border-border px-4 py-3 rounded-2xl">
+                  <div className="flex gap-1">
+                    <span
+                      className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce"
+                      style={{ animationDelay: '0ms' }}
+                    />
+                    <span
+                      className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce"
+                      style={{ animationDelay: '150ms' }}
+                    />
+                    <span
+                      className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce"
+                      style={{ animationDelay: '300ms' }}
+                    />
                   </div>
-                ) : null}
-
-                {sources.length > 0 ? (
-                  <div className="rounded-[1.5rem] border border-slate-800 bg-slate-900/50 p-4">
-                    <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">Sources</p>
-                    <ul className="mt-3 space-y-2 text-sm">
-                      {sources.map((source) => (
-                        <li key={source.url}>
-                          <a
-                            href={source.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-cyan-200 underline decoration-cyan-500/40 underline-offset-4"
-                          >
-                            {source.title}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ) : null}
+                </div>
               </div>
             )}
           </div>
+        )}
+      </div>
 
-          <div className="border-t border-slate-800 bg-slate-950/80 px-5 py-4 md:px-8">
-            <form onSubmit={handleSubmit}>
-              <div className="rounded-[1.75rem] border border-slate-800 bg-slate-900 p-3 shadow-xl shadow-slate-950/20">
-                <textarea
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  onKeyDown={handleTextareaKeyDown}
-                  rows={4}
-                  placeholder="Ask a question or paste a URL..."
-                  className="w-full resize-none bg-transparent px-3 py-2 text-sm leading-7 text-slate-100 outline-none placeholder:text-slate-500"
-                />
-                <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-800 px-3 pt-3">
-                  <div className="flex items-center gap-3">
-                    {isUrlInput ? (
-                      <span className="rounded-full bg-cyan-400/10 px-3 py-1 text-xs text-cyan-200">
-                        Summarise URL
-                      </span>
-                    ) : null}
-                    <Link to="/history" className="text-sm text-slate-400 hover:text-slate-200">
-                      Open full history
-                    </Link>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={!query.trim() || isStreaming}
-                    className="rounded-full bg-cyan-400 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {isStreaming ? 'Streaming...' : 'Send'}
-                  </button>
-                </div>
-              </div>
-            </form>
+      {/* Input bar */}
+      <div className="shrink-0 p-4 md:p-8 bg-gradient-to-t from-background via-background to-transparent pt-12">
+        <div className="max-w-[800px] mx-auto flex flex-col gap-3">
+          <div className="relative group">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              placeholder="Type your research question..."
+              className="pr-12 min-h-[56px] py-4 bg-card shadow-lg border-border focus-visible:border-primary/40 transition-all resize-none overflow-hidden"
+              rows={1}
+            />
+            <button
+              onClick={handleSend}
+              disabled={!input.trim() || isTyping}
+              className="absolute right-3 bottom-3 w-8 h-8 rounded-lg bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors shadow-sm"
+            >
+              <Send size={16} />
+            </button>
           </div>
-        </section>
+          <p className="text-[11px] text-center text-muted-foreground/50">
+            Nexus may make mistakes. Always verify important information from sources.
+          </p>
+        </div>
       </div>
-    </AppLayout>
-  );
-}
-
-function SessionButton({
-  session,
-  isActive,
-  onClick,
-}: {
-  session: SessionSummary;
-  isActive: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full rounded-2xl border p-4 text-left transition ${
-        isActive
-          ? 'border-cyan-400/40 bg-cyan-400/10'
-          : 'border-slate-800 bg-slate-950/60 hover:border-slate-700'
-      }`}
-    >
-      <p className="line-clamp-2 text-sm font-medium text-slate-100">{session.title}</p>
-      <p className="mt-2 text-xs uppercase tracking-[0.25em] text-slate-500">{session.mode}</p>
-      <p className="mt-2 text-xs text-slate-400">{formatRelativeTime(session.updatedAt)}</p>
-    </button>
-  );
-}
-
-function MessageCard({ message, onSaveToKb }: { message: Message; onSaveToKb: () => void }) {
-  const isAssistant = message.role === 'assistant';
-
-  return (
-    <div
-      className={`rounded-[1.75rem] border p-5 ${
-        isAssistant ? 'border-cyan-400/20 bg-slate-900/80' : 'border-slate-800 bg-slate-950/70'
-      }`}
-    >
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
-          {isAssistant ? 'Assistant' : 'You'}
-        </p>
-        <p className="text-xs text-slate-500">{formatRelativeTime(message.createdAt)}</p>
-      </div>
-      <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-100">{message.content}</p>
-      {isAssistant ? (
-        <button
-          type="button"
-          onClick={onSaveToKb}
-          className="mt-4 rounded-full border border-slate-700 px-4 py-2 text-xs text-slate-300 transition hover:border-amber-300 hover:text-amber-100"
-        >
-          Save to KB
-        </button>
-      ) : null}
     </div>
   );
 }
+
+export default ChatPage;

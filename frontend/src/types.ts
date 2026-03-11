@@ -1,4 +1,4 @@
-export type ChatMode = 'WEB_SEARCH' | 'KB_SEARCH' | 'DEEP_RESEARCH';
+export type ChatMode = 'web' | 'kb' | 'deep';
 
 export interface User {
   id: number;

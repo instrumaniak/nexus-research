@@ -10,7 +10,7 @@ vi.mock('@/api/chat.api', () => ({
     session: {
       id: 1,
       title: 'Session',
-      mode: 'WEB_SEARCH',
+      mode: 'web',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },

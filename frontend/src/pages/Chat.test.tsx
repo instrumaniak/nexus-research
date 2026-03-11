@@ -32,7 +32,7 @@ describe('Chat page', () => {
       messages: [],
       streamingContent: '',
       isStreaming: false,
-      mode: 'WEB_SEARCH',
+      mode: 'web',
       progressStep: null,
       progressHistory: [],
       sources: [],
@@ -42,7 +42,7 @@ describe('Chat page', () => {
       session: {
         id: 1,
         title: 'Session',
-        mode: 'WEB_SEARCH',
+        mode: 'web',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -59,7 +59,7 @@ describe('Chat page', () => {
     );
   });
 
-  it('submitting query with WEB_SEARCH emits correct mode to API', async () => {
+  it('submitting query with web mode emits correct mode to API', async () => {
     const user = userEvent.setup();
     vi.mocked(chatApi.streamChat).mockResolvedValue();
 
@@ -75,7 +75,7 @@ describe('Chat page', () => {
       expect(chatApi.streamChat).toHaveBeenCalledWith(
         expect.objectContaining({
           query: 'what is NestJS',
-          mode: 'WEB_SEARCH',
+          mode: 'web',
           sessionId: null,
         }),
         expect.any(Object),

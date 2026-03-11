@@ -1,107 +1,55 @@
-import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSessions } from '@/api/chat.api';
-import { AppLayout } from '@/components/layout/AppLayout';
-import { formatDateTime, formatRelativeTime } from '@/lib/time';
+import { Globe, ChevronRight } from 'lucide-react';
 import { useChatStore } from '@/stores/chat.store';
-import type { SessionSummary } from '@/types';
 
-export default function History() {
+export function HistoryPage() {
   const navigate = useNavigate();
-  const sessions = useChatStore((state) => state.sessions);
-  const setSessions = useChatStore((state) => state.setSessions);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let active = true;
-
-    void (async () => {
-      try {
-        const data = await getSessions();
-        if (active) {
-          setSessions(data);
-        }
-      } catch {
-        if (active) {
-          setError('Failed to load session history');
-        }
-      } finally {
-        if (active) {
-          setIsLoading(false);
-        }
-      }
-    })();
-
-    return () => {
-      active = false;
-    };
-  }, [setSessions]);
+  const { sessions } = useChatStore();
 
   return (
-    <AppLayout>
-      <div className="p-5 md:p-8">
-        <div className="rounded-[2rem] border border-slate-800 bg-slate-900/60 p-6">
-          <p className="text-xs uppercase tracking-[0.3em] text-cyan-300">History</p>
-          <h1 className="mt-2 font-serif text-3xl text-slate-50">Saved research sessions</h1>
-        </div>
+    <div className="flex-1 overflow-y-auto bg-background p-8">
+      <div className="max-w-[720px] mx-auto">
+        <h1 className="text-xl font-semibold text-foreground">History</h1>
+        <p className="text-sm text-muted-foreground mb-5">Your past research sessions</p>
 
-        {error ? (
-          <p className="mt-6 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-200">
-            {error}
-          </p>
-        ) : null}
+        <div className="flex flex-col gap-3">
+          {sessions.map((session) => (
+            <div
+              key={session.id}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') navigate(`/chat/${session.id}`);
+              }}
+              onClick={() => navigate(`/chat/${session.id}`)}
+              className="bg-card border border-border rounded-lg p-4 flex items-center gap-4 cursor-pointer hover:bg-muted hover:border-primary/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="w-[34px] h-[34px] rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Globe className="text-primary" size={16} />
+              </div>
 
-        {isLoading ? (
-          <div className="mt-6 space-y-4">
-            {Array.from({ length: 4 }).map((_, index) => (
-              <div
-                key={index}
-                className="h-24 animate-pulse rounded-[1.5rem] border border-slate-800 bg-slate-900/70"
-              />
-            ))}
-          </div>
-        ) : sessions.length === 0 ? (
-          <div className="mt-6 rounded-[1.5rem] border border-dashed border-slate-700 bg-slate-900/40 p-8 text-center text-slate-400">
-            No sessions yet. Start a conversation.
-          </div>
-        ) : (
-          <div className="mt-6 grid gap-4">
-            {sessions.map((session) => (
-              <HistoryCard
-                key={session.id}
-                session={session}
-                onOpen={() => navigate(`/chat/${session.id}`)}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-    </AppLayout>
-  );
-}
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="font-medium text-[13.5px] truncate text-foreground">
+                  {session.title}
+                </span>
+                <span className="text-[12px] text-muted-foreground mt-0.5">
+                  Web Search · {session.updatedAt}
+                </span>
+              </div>
 
-function HistoryCard({ session, onOpen }: { session: SessionSummary; onOpen: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className="rounded-[1.75rem] border border-slate-800 bg-slate-900/70 p-5 text-left transition hover:border-cyan-400/50 hover:bg-slate-900"
-    >
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="font-medium text-slate-100">{session.title}</h2>
-          <p className="mt-2 text-sm text-slate-400">
-            {formatDateTime(session.createdAt)} • {session.messageCount} messages
-          </p>
-        </div>
-        <div className="text-right">
-          <span className="inline-flex rounded-full bg-cyan-400/10 px-3 py-1 text-xs font-medium uppercase tracking-[0.2em] text-cyan-200">
-            {session.mode.replace('_', ' ')}
-          </span>
-          <p className="mt-2 text-sm text-slate-500">{formatRelativeTime(session.updatedAt)}</p>
+              <div className="shrink-0 text-muted-foreground/50">
+                <ChevronRight size={16} />
+              </div>
+            </div>
+          ))}
+
+          {sessions.length === 0 && (
+            <div className="text-center py-10 text-muted-foreground text-sm border border-dashed rounded-lg">
+              No sessions found.
+            </div>
+          )}
         </div>
       </div>
-    </button>
+    </div>
   );
 }
