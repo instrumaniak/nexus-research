@@ -12,6 +12,7 @@ import { ChatModule } from './chat/chat.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { JwtConfigModule } from './config/jwt.config';
 import { DatabaseModule } from './database';
+import { LoggingModule } from './logging/logging.module';
 import {
   aiConfig,
   appConfig,
@@ -46,6 +47,7 @@ import {
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtConfigModule,
     DatabaseModule,
+    LoggingModule,
     AuthModule,
     AiProviderModule,
     AgentsModule,

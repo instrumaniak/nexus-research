@@ -3,6 +3,7 @@ import { desc, eq } from 'drizzle-orm';
 import { users } from '../../drizzle/schema';
 import { AuthService } from '../auth/auth.service';
 import { DRIZZLE_CLIENT, DrizzleClient } from '../database';
+import { LoggingService } from '../logging/logging.service';
 
 export interface UserSummary {
   id: number;
@@ -19,6 +20,7 @@ export class AdminService {
   constructor(
     @Inject(DRIZZLE_CLIENT) private readonly db: DrizzleClient,
     private readonly authService: AuthService,
+    private readonly logging: LoggingService,
   ) {}
 
   async getUsers(): Promise<UserSummary[]> {
@@ -54,7 +56,9 @@ export class AdminService {
       throw new BadRequestException('User is already active');
     }
 
-    return this.updateStatus(id, 'ACTIVE');
+    const updated = await this.updateStatus(id, 'ACTIVE');
+    this.logging.log('User approved', 'AdminService', id, { previousStatus: user.status });
+    return updated;
   }
 
   async banUser(id: number): Promise<UserSummary> {
@@ -70,6 +74,7 @@ export class AdminService {
 
     const updated = await this.updateStatus(id, 'BANNED');
     await this.authService.revokeAllTokensForUser(id);
+    this.logging.log('User banned', 'AdminService', id, { previousStatus: user.status });
 
     return updated;
   }
@@ -81,7 +86,9 @@ export class AdminService {
       throw new BadRequestException('User is not banned');
     }
 
-    return this.updateStatus(id, 'ACTIVE');
+    const updated = await this.updateStatus(id, 'ACTIVE');
+    this.logging.log('User unbanned', 'AdminService', id, { previousStatus: user.status });
+    return updated;
   }
 
   private async getUserById(id: number): Promise<UserSummary> {

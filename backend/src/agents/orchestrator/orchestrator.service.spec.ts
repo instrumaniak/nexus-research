@@ -13,6 +13,11 @@ describe('OrchestratorService', () => {
   const synthesizerAgent = {
     synthesize: jest.fn(),
   };
+  const logging = {
+    log: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  };
 
   let service: OrchestratorService;
 
@@ -22,6 +27,7 @@ describe('OrchestratorService', () => {
       readerAgent as never,
       summarizerAgent as never,
       synthesizerAgent as never,
+      logging as never,
     );
     jest.clearAllMocks();
   });

@@ -13,6 +13,7 @@ import { randomUUID } from 'crypto';
 import { refreshTokens, User, users } from '../../drizzle/schema';
 import type { AuthConfig } from '../config';
 import { DRIZZLE_CLIENT, DrizzleClient } from '../database';
+import { LoggingService } from '../logging/logging.service';
 import { RegisterDto } from './dto/register.dto';
 
 interface TokenPayload {
@@ -33,6 +34,7 @@ export class AuthService {
     @Inject(DRIZZLE_CLIENT) private readonly db: DrizzleClient,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly logging: LoggingService,
   ) {}
 
   async register(dto: RegisterDto): Promise<{ message: string }> {
@@ -76,10 +78,16 @@ export class AuthService {
     user: { id: number; username: string; email: string; role: string };
   }> {
     if (user.status === 'PENDING') {
+      this.logging.warn('Login blocked: account pending approval', 'AuthService', user.id, {
+        email: user.email,
+      });
       throw new ForbiddenException('Account pending approval');
     }
 
     if (user.status === 'BANNED') {
+      this.logging.warn('Login blocked: account suspended', 'AuthService', user.id, {
+        email: user.email,
+      });
       throw new ForbiddenException('Account suspended');
     }
 
@@ -100,6 +108,11 @@ export class AuthService {
         lastLoginAt: new Date(),
       })
       .where(eq(users.id, user.id));
+
+    this.logging.log('User login successful', 'AuthService', user.id, {
+      email: user.email,
+      role: user.role,
+    });
 
     const response: {
       accessToken: string;
@@ -196,12 +209,14 @@ export class AuthService {
     const user = await this.db.select().from(users).where(eq(users.email, email)).get();
 
     if (!user || !user.password) {
+      this.logging.warn('Login failed: invalid credentials', 'AuthService', undefined, { email });
       return null;
     }
 
     const passwordMatches = await bcrypt.compare(password, user.password);
 
     if (!passwordMatches) {
+      this.logging.warn('Login failed: invalid credentials', 'AuthService', user.id, { email });
       return null;
     }
 
