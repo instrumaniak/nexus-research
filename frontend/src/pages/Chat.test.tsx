@@ -36,14 +36,16 @@ describe('Chat page', () => {
     });
   });
 
-  it('renders research question header in empty state', async () => {
+  it('renders empty state prompt', () => {
     renderChat();
-    expect(screen.getByText(/what are we researching today/i)).toBeInTheDocument();
+    expect(screen.getByText(/ask a research question to get started/i)).toBeInTheDocument();
   });
 
-  it('renders help text', () => {
+  it('renders footer disclaimer', () => {
     renderChat();
-    expect(screen.getByText(/nexus helps you synthesis information/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/nexus may make mistakes\. always verify important information/i),
+    ).toBeInTheDocument();
   });
 });
 

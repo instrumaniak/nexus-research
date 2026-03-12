@@ -11,6 +11,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
 
+      const responseBody =
+        typeof exceptionResponse === 'object' && exceptionResponse !== null
+          ? (exceptionResponse as Record<string, unknown>)
+          : null;
+
       const message =
         typeof exceptionResponse === 'string'
           ? exceptionResponse
@@ -23,6 +28,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         timestamp: new Date().toISOString(),
         path: request.url,
         message,
+        ...(responseBody?.errors ? { errors: responseBody.errors } : {}),
       });
 
       return;

@@ -15,6 +15,7 @@ describe('Login page', () => {
       accessToken: null,
       isAuthenticated: false,
       isLoading: false,
+      login: vi.fn().mockResolvedValue(undefined),
     });
   });
 
@@ -30,9 +31,6 @@ describe('Login page', () => {
 
     renderWithRouter();
 
-    // The new Login.tsx has hardcoded credentials in the handleSubmit,
-    // so we don't even strictly need to type them for the mock to work,
-    // but the UI has the fields.
     await user.type(screen.getByLabelText(/email/i), 'user@example.com');
     await user.type(screen.getByLabelText(/password/i), 'password');
     await user.click(screen.getByRole('button', { name: /sign in/i }));
@@ -40,6 +38,8 @@ describe('Login page', () => {
     await waitFor(() => {
       expect(screen.getByText('Chat page')).toBeInTheDocument();
     });
+
+    expect(useAuthStore.getState().login).toHaveBeenCalledWith('user@example.com', 'password');
   });
 });
 

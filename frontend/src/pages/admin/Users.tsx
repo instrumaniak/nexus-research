@@ -1,110 +1,71 @@
 // frontend/src/pages/admin/Users.tsx
-import { useState } from 'react';
-import { Check, Ban, RotateCcw } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { Check, Ban, RotateCcw, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { Badge } from '@/components/ui/badge';
-
-type UserStatus = 'ACTIVE' | 'PENDING' | 'BANNED';
-type UserRole = 'user' | 'superadmin';
-
-interface AdminUser {
-  id: number;
-  name: string;
-  email: string;
-  role: UserRole;
-  status: UserStatus;
-  joined: string;
-}
-
-const MOCK_USERS: AdminUser[] = [
-  {
-    id: 1,
-    name: 'Admin',
-    email: 'admin@nexus.local',
-    role: 'superadmin',
-    status: 'ACTIVE',
-    joined: 'Jan 1, 2026',
-  },
-  {
-    id: 2,
-    name: 'Alice',
-    email: 'alice@example.com',
-    role: 'user',
-    status: 'ACTIVE',
-    joined: 'Feb 20, 2026',
-  },
-  {
-    id: 3,
-    name: 'Bob',
-    email: 'bob@example.com',
-    role: 'user',
-    status: 'PENDING',
-    joined: 'Mar 5, 2026',
-  },
-  {
-    id: 4,
-    name: 'Carol',
-    email: 'carol@example.com',
-    role: 'user',
-    status: 'PENDING',
-    joined: 'Mar 6, 2026',
-  },
-  {
-    id: 5,
-    name: 'David',
-    email: 'david@example.com',
-    role: 'user',
-    status: 'ACTIVE',
-    joined: 'Feb 15, 2026',
-  },
-  {
-    id: 6,
-    name: 'Eve',
-    email: 'eve@example.com',
-    role: 'user',
-    status: 'BANNED',
-    joined: 'Feb 10, 2026',
-  },
-  {
-    id: 7,
-    name: 'Frank',
-    email: 'frank@example.com',
-    role: 'user',
-    status: 'PENDING',
-    joined: 'Mar 7, 2026',
-  },
-  {
-    id: 8,
-    name: 'Grace',
-    email: 'grace@example.com',
-    role: 'user',
-    status: 'ACTIVE',
-    joined: 'Jan 15, 2026',
-  },
-];
+import { approveUser, banUser, getUsers, unbanUser } from '@/api/admin.api';
+import type { AdminUser } from '@/types';
 
 type TabFilter = 'all' | 'pending';
 
-function statusBadgeVariant(status: UserStatus) {
+function statusBadgeVariant(status: AdminUser['status']) {
   if (status === 'ACTIVE') return 'success' as const;
   if (status === 'PENDING') return 'warning' as const;
-  if (status === 'BANNED') return 'destructive' as const;
-  return 'secondary' as const;
+  return 'destructive' as const;
 }
 
 export function AdminUsersPage() {
-  const [users, setUsers] = useState<AdminUser[]>(MOCK_USERS);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [tab, setTab] = useState<TabFilter>('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const pendingCount = users.filter((u) => u.status === 'PENDING').length;
-  const visibleUsers = tab === 'pending' ? users.filter((u) => u.status === 'PENDING') : users;
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      try {
+        const data = await getUsers();
+        if (active) setUsers(data);
+      } catch {
+        if (active) setError('Failed to load users.');
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
-  const approve = (id: number) =>
-    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, status: 'ACTIVE' } : u)));
-  const ban = (id: number) =>
-    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, status: 'BANNED' } : u)));
-  const unban = (id: number) =>
-    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, status: 'ACTIVE' } : u)));
+  const pendingCount = useMemo(() => users.filter((u) => u.status === 'PENDING').length, [users]);
+  const visibleUsers = useMemo(
+    () => (tab === 'pending' ? users.filter((u) => u.status === 'PENDING') : users),
+    [users, tab],
+  );
+
+  const optimisticUpdate = async (
+    id: number,
+    optimistic: (u: AdminUser) => AdminUser,
+    request: () => Promise<AdminUser>,
+  ) => {
+    const prev = users;
+    setUsers((cur) => cur.map((u) => (u.id === id ? optimistic(u) : u)));
+    try {
+      const updated = await request();
+      setUsers((cur) => cur.map((u) => (u.id === id ? updated : u)));
+    } catch {
+      setUsers(prev);
+      setError('Failed to update user. Please try again.');
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center bg-background">
+        <Loader2 className="text-muted-foreground animate-spin" size={24} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-y-auto bg-background p-8">
@@ -124,6 +85,12 @@ export function AdminUsersPage() {
             </div>
           )}
         </div>
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-[13px] text-destructive">
+            {error}
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-1 border-b border-border mb-4">
@@ -173,20 +140,24 @@ export function AdminUsersPage() {
                       <div
                         className={cn(
                           'w-[30px] h-[30px] rounded-full flex items-center justify-center shrink-0',
-                          user.role === 'superadmin' ? 'bg-primary/10' : 'bg-muted',
+                          user.role.toUpperCase() === 'SUPERADMIN' ? 'bg-primary/10' : 'bg-muted',
                         )}
                       >
                         <span
                           className={cn(
                             'text-[12px] font-semibold',
-                            user.role === 'superadmin' ? 'text-primary' : 'text-muted-foreground',
+                            user.role.toUpperCase() === 'SUPERADMIN'
+                              ? 'text-primary'
+                              : 'text-muted-foreground',
                           )}
                         >
-                          {user.name[0].toUpperCase()}
+                          {user.username.charAt(0).toUpperCase()}
                         </span>
                       </div>
                       <div>
-                        <div className="text-[13px] font-medium text-foreground">{user.name}</div>
+                        <div className="text-[13px] font-medium text-foreground">
+                          {user.username}
+                        </div>
                         <div className="text-[11.5px] text-muted-foreground">{user.email}</div>
                       </div>
                     </div>
@@ -197,7 +168,7 @@ export function AdminUsersPage() {
                     <Badge variant={statusBadgeVariant(user.status)}>
                       <span
                         className={cn(
-                          'w-1.5 h-1.5 rounded-full',
+                          'w-1.5 h-1.5 rounded-full mr-1.5',
                           user.status === 'ACTIVE' && 'bg-success',
                           user.status === 'PENDING' && 'bg-warning',
                           user.status === 'BANNED' && 'bg-destructive',
@@ -212,25 +183,33 @@ export function AdminUsersPage() {
                     <span
                       className={cn(
                         'text-[13px]',
-                        user.role === 'superadmin'
+                        user.role.toUpperCase() === 'SUPERADMIN'
                           ? 'text-primary font-medium'
                           : 'text-muted-foreground',
                       )}
                     >
-                      {user.role === 'superadmin' ? 'Superadmin' : 'User'}
+                      {user.role.toUpperCase() === 'SUPERADMIN' ? 'Superadmin' : 'User'}
                     </span>
                   </td>
 
                   {/* Joined */}
-                  <td className="px-4 py-3 text-[13px] text-muted-foreground">{user.joined}</td>
+                  <td className="px-4 py-3 text-[13px] text-muted-foreground">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </td>
 
                   {/* Actions */}
                   <td className="px-4 py-3">
-                    {user.role !== 'superadmin' && (
+                    {user.role.toUpperCase() !== 'SUPERADMIN' && (
                       <div className="flex gap-2">
                         {user.status === 'PENDING' && (
                           <button
-                            onClick={() => approve(user.id)}
+                            onClick={() =>
+                              optimisticUpdate(
+                                user.id,
+                                (u) => ({ ...u, status: 'ACTIVE' }),
+                                () => approveUser(user.id),
+                              )
+                            }
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium bg-success/10 text-success hover:bg-success/20 transition-colors"
                           >
                             <Check size={11} /> Approve
@@ -238,7 +217,13 @@ export function AdminUsersPage() {
                         )}
                         {user.status === 'ACTIVE' && (
                           <button
-                            onClick={() => ban(user.id)}
+                            onClick={() =>
+                              optimisticUpdate(
+                                user.id,
+                                (u) => ({ ...u, status: 'BANNED' }),
+                                () => banUser(user.id),
+                              )
+                            }
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors"
                           >
                             <Ban size={11} /> Ban
@@ -246,7 +231,13 @@ export function AdminUsersPage() {
                         )}
                         {user.status === 'BANNED' && (
                           <button
-                            onClick={() => unban(user.id)}
+                            onClick={() =>
+                              optimisticUpdate(
+                                user.id,
+                                (u) => ({ ...u, status: 'ACTIVE' }),
+                                () => unbanUser(user.id),
+                              )
+                            }
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium bg-muted text-muted-foreground hover:bg-muted/80 transition-colors"
                           >
                             <RotateCcw size={11} /> Unban
@@ -257,6 +248,14 @@ export function AdminUsersPage() {
                   </td>
                 </tr>
               ))}
+
+              {visibleUsers.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                    {tab === 'pending' ? 'No pending approvals.' : 'No users found.'}
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
