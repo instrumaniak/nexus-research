@@ -24,7 +24,13 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
   const { sessions, clearSession } = useChatStore();
   const navigate = useNavigate();
 
-  const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'U';
+  const userInitial = user?.name
+    ? user.name.charAt(0).toUpperCase()
+    : user?.username
+      ? user.username.charAt(0).toUpperCase()
+      : user?.email
+        ? user.email.charAt(0).toUpperCase()
+        : 'U';
 
   return (
     <div
@@ -188,7 +194,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
             )}
             {collapsed ? (
               <button
-                onClick={logout}
+                onClick={() => {
+                  void logout();
+                }}
                 title="Log out"
                 className="flex items-center justify-center text-muted-foreground hover:text-foreground p-1"
               >
@@ -196,7 +204,9 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
               </button>
             ) : (
               <button
-                onClick={logout}
+                onClick={() => {
+                  void logout();
+                }}
                 title="Log out"
                 className="text-muted-foreground hover:text-foreground shrink-0 p-1"
               >
