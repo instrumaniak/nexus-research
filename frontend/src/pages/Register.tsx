@@ -1,11 +1,15 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Check } from 'lucide-react';
+import { isAxiosError } from 'axios';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { register, getErrorMessage } from '@/api/auth.api';
+
+type FieldKey = 'username' | 'email' | 'password';
+type FieldErrors = Partial<Record<FieldKey, string>>;
 
 export function RegisterPage() {
   const navigate = useNavigate();
@@ -13,17 +17,46 @@ export function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setFieldErrors({});
     setLoading(true);
     try {
       await register({ username, email, password });
       setSubmitted(true);
     } catch (err) {
+      if (isAxiosError(err) && typeof err.response?.data === 'object' && err.response?.data) {
+        const data = err.response.data as unknown as {
+          message?: string;
+          errors?: Array<{ field?: string; message?: string }>;
+        };
+
+        if (Array.isArray(data.errors) && data.errors.length > 0) {
+          const next: FieldErrors = {};
+          for (const issue of data.errors) {
+            if (!issue || typeof issue.field !== 'string' || typeof issue.message !== 'string')
+              continue;
+            if (
+              issue.field === 'username' ||
+              issue.field === 'email' ||
+              issue.field === 'password'
+            ) {
+              next[issue.field] = issue.message;
+            }
+          }
+          if (Object.keys(next).length > 0) {
+            setFieldErrors(next);
+            setError('');
+            return;
+          }
+        }
+      }
+
       setError(getErrorMessage(err));
     } finally {
       setLoading(false);
@@ -86,7 +119,18 @@ export function RegisterPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   required
+                  aria-invalid={Boolean(fieldErrors.username)}
+                  className={
+                    fieldErrors.username
+                      ? 'border-destructive focus-visible:ring-destructive/30'
+                      : undefined
+                  }
                 />
+                {fieldErrors.username && (
+                  <p className="text-[12px] text-destructive leading-snug">
+                    {fieldErrors.username}
+                  </p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
@@ -97,7 +141,16 @@ export function RegisterPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  className={
+                    fieldErrors.email
+                      ? 'border-destructive focus-visible:ring-destructive/30'
+                      : undefined
+                  }
                 />
+                {fieldErrors.email && (
+                  <p className="text-[12px] text-destructive leading-snug">{fieldErrors.email}</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="password">Password</Label>
@@ -107,7 +160,18 @@ export function RegisterPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  aria-invalid={Boolean(fieldErrors.password)}
+                  className={
+                    fieldErrors.password
+                      ? 'border-destructive focus-visible:ring-destructive/30'
+                      : undefined
+                  }
                 />
+                {fieldErrors.password && (
+                  <p className="text-[12px] text-destructive leading-snug">
+                    {fieldErrors.password}
+                  </p>
+                )}
               </div>
 
               <Button
