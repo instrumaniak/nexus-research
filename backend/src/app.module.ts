@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { AgentsModule } from './agents/agents.module';
 import { AiProviderModule } from './ai-provider/ai-provider.module';
 import { ChatModule } from './chat/chat.module';
+import { EmbeddingsModule } from './embeddings/embeddings.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { JwtConfigModule } from './config/jwt.config';
 import { DatabaseModule } from './database';
@@ -53,6 +54,7 @@ import {
     AgentsModule,
     ChatModule,
     AdminModule,
+    EmbeddingsModule,
   ],
   controllers: [],
   providers: [
