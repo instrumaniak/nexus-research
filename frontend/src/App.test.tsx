@@ -5,6 +5,19 @@ import App from './App';
 import { useAuthStore } from '@/stores/auth.store';
 import { ThemeProvider } from '@/components/theme-provider';
 
+vi.mock('@/api/chat.api', () => ({
+  getSessions: vi.fn(async () => []),
+  getSession: vi.fn(),
+  streamChat: vi.fn(),
+}));
+
+vi.mock('@/api/admin.api', () => ({
+  getUsers: vi.fn(async () => []),
+  approveUser: vi.fn(),
+  banUser: vi.fn(),
+  unbanUser: vi.fn(),
+}));
+
 describe('App routing', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -13,6 +26,7 @@ describe('App routing', () => {
       accessToken: null,
       isAuthenticated: false,
       isLoading: false,
+      isInitialising: false,
       initialise: vi.fn().mockResolvedValue(undefined),
     });
   });
@@ -43,6 +57,7 @@ describe('App routing', () => {
       accessToken: 'token',
       isAuthenticated: true,
       isLoading: false,
+      isInitialising: false,
       initialise: vi.fn().mockResolvedValue(undefined),
     });
 
