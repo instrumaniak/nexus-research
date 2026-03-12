@@ -5,6 +5,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as bcrypt from 'bcrypt';
 import { User } from '../../drizzle/schema';
 import { DRIZZLE_CLIENT } from '../database';
+import { LoggingService } from '../logging/logging.service';
 import { AuthService } from './auth.service';
 
 type MockDb = {
@@ -85,6 +86,14 @@ describe('AuthService', () => {
           },
         },
         { provide: ConfigService, useValue: mockConfigService },
+        {
+          provide: LoggingService,
+          useValue: {
+            log: jest.fn(),
+            warn: jest.fn(),
+            error: jest.fn(),
+          },
+        },
       ],
     }).compile();
 

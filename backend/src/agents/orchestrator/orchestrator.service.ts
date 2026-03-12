@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { LoggingService } from '../../logging/logging.service';
 import { ReaderAgent } from '../reader/reader.agent';
 import { SearchAgent } from '../search/search.agent';
 import { SummarizerAgent } from '../summarizer/summarizer.agent';
@@ -19,11 +20,10 @@ export class OrchestratorService {
     private readonly readerAgent: ReaderAgent,
     private readonly summarizerAgent: SummarizerAgent,
     private readonly synthesizerAgent: SynthesizerAgent,
+    private readonly logging: LoggingService,
   ) {}
 
-  async *runWebSearch(query: string, _userId: number): AsyncGenerator<SseEvent> {
-    void _userId;
-
+  async *runWebSearch(query: string, userId: number): AsyncGenerator<SseEvent> {
     try {
       const isUrl = /^https?:\/\//.test(query.trim());
 
@@ -62,6 +62,10 @@ export class OrchestratorService {
         })),
       };
     } catch (error) {
+      this.logging.error('Orchestrator runWebSearch failed', 'OrchestratorService', userId, {
+        query,
+        error: error instanceof Error ? { message: error.message, name: error.name } : error,
+      });
       yield {
         step: 'error',
         message: error instanceof Error ? error.message : 'Unknown orchestrator error',

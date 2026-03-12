@@ -9,6 +9,11 @@ describe('ChatService', () => {
   let sqlite: Database.Database;
   let service: ChatService;
   let db: ReturnType<typeof drizzle<typeof schema>>;
+  const logging = {
+    log: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+  };
 
   beforeEach(() => {
     sqlite = new Database(':memory:');
@@ -46,7 +51,7 @@ describe('ChatService', () => {
     `);
 
     db = drizzle(sqlite, { schema });
-    service = new ChatService(db);
+    service = new ChatService(db, logging as never);
   });
 
   afterEach(() => {

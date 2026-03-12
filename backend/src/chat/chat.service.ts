@@ -2,6 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { and, desc, eq, sql } from 'drizzle-orm';
 import { messages, sessions } from '../../drizzle/schema';
 import { DRIZZLE_CLIENT, DrizzleClient } from '../database';
+import { LoggingService } from '../logging/logging.service';
 
 export interface ChatSource {
   title: string;
@@ -32,7 +33,10 @@ export interface SessionWithMessages {
 
 @Injectable()
 export class ChatService {
-  constructor(@Inject(DRIZZLE_CLIENT) private readonly db: DrizzleClient) {}
+  constructor(
+    @Inject(DRIZZLE_CLIENT) private readonly db: DrizzleClient,
+    private readonly logging: LoggingService,
+  ) {}
 
   async saveSession(
     userId: number,
@@ -74,6 +78,10 @@ export class ChatService {
         .get();
 
       resolvedSessionId = inserted.id;
+      this.logging.log('Chat session created', 'OrchestratorService', userId, {
+        sessionId: resolvedSessionId,
+        mode,
+      });
     }
 
     await this.db.insert(messages).values([

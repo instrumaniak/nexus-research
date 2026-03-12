@@ -21,6 +21,11 @@ describe('AdminService', () => {
   let authService: {
     revokeAllTokensForUser: jest.Mock;
   };
+  let logging: {
+    log: jest.Mock;
+    warn: jest.Mock;
+    error: jest.Mock;
+  };
 
   beforeEach(() => {
     db = {
@@ -32,7 +37,13 @@ describe('AdminService', () => {
       revokeAllTokensForUser: jest.fn(),
     };
 
-    service = new AdminService(db as never, authService as never);
+    logging = {
+      log: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+    };
+
+    service = new AdminService(db as never, authService as never, logging as never);
   });
 
   it('getUsers returns array without password field', async () => {
