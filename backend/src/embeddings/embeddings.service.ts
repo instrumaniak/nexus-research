@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { LoggingService } from '../logging/logging.service';
 
 export function float32ArrayToBlob(arr: Float32Array): Buffer {
-  return Buffer.from(arr.buffer);
+  return Buffer.from(arr.buffer, arr.byteOffset, arr.byteLength);
 }
 
 export function blobToFloat32Array(buf: Buffer): Float32Array {
