@@ -19,10 +19,16 @@ type EmbeddingPipeline = (
 @Injectable()
 export class EmbeddingsService implements OnModuleInit {
   private pipe: EmbeddingPipeline | null = null;
+  private readonly useStub = process.env.EMBEDDINGS_STUB === 'true';
 
   constructor(private readonly loggingService: LoggingService) {}
 
   async onModuleInit(): Promise<void> {
+    if (this.useStub) {
+      this.loggingService.warn('Embeddings stub enabled', 'EmbeddingsService');
+      return;
+    }
+
     this.loggingService.log('Loading embeddings model...', 'EmbeddingsService');
 
     const modulePromise = Function('return import("@xenova/transformers")')() as Promise<{
@@ -40,6 +46,12 @@ export class EmbeddingsService implements OnModuleInit {
 
   async embed(text: string): Promise<Float32Array> {
     try {
+      if (this.useStub) {
+        const stub = new Float32Array(384);
+        stub[0] = text.length;
+        return stub;
+      }
+
       if (!this.pipe) {
         throw new Error('Embeddings pipeline not initialised');
       }

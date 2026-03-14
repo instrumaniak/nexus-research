@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import Database from 'better-sqlite3';
 import type BetterSqlite3 from 'better-sqlite3';
 import { drizzle } from 'drizzle-orm/better-sqlite3';
+import * as sqliteVec from 'sqlite-vec';
 import * as schema from '../../drizzle/schema';
 import type { DatabaseConfig } from '../config';
 import { DRIZZLE_CLIENT, SQLITE_CLIENT } from './database.constants';
@@ -19,6 +20,7 @@ import { DRIZZLE_CLIENT, SQLITE_CLIENT } from './database.constants';
           throw new Error('Missing required config: database.path');
         }
         const sqlite = new Database(dbPath);
+        sqliteVec.load(sqlite);
         sqlite.pragma('journal_mode = WAL');
         return sqlite;
       },
