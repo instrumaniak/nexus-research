@@ -1,6 +1,7 @@
 node_modules/
 .env
 nexus.db
+e2e-test.db
 *.db-shm
 *.db-wal
 backend/.cache/       # @xenova/transformers model cache
