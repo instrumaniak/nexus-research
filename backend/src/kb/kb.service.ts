@@ -74,7 +74,9 @@ export class KbService {
     }
 
     this.db.run(
-      sql`INSERT INTO kb_items_vec (item_id, embedding) VALUES (${item.id}, ${embeddingBlob})`,
+      sql`INSERT INTO kb_items_vec (item_id, embedding) VALUES (${sql.raw(
+        String(item.id),
+      )}, ${embeddingBlob})`,
     );
 
     this.loggingService.log(`KB item saved: "${dto.title}"`, 'KbService', userId);
