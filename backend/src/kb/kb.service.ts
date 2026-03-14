@@ -131,6 +131,7 @@ export class KbService {
       throw new BadRequestException('Search query must not be empty');
     }
 
+    const ftsQuery = this.buildFtsQuery(query);
     const ftsPromise = Promise.resolve(
       this.db.all(sql`
         SELECT kb_items.id, kb_items.title, kb_items.summary, kb_items.source_url,
@@ -138,7 +139,7 @@ export class KbService {
                rank as fts_score
         FROM kb_items_fts
         JOIN kb_items ON kb_items.id = kb_items_fts.rowid
-        WHERE kb_items_fts MATCH ${query + '*'}
+        WHERE kb_items_fts MATCH ${ftsQuery}
           AND kb_items.user_id = ${userId}
         ORDER BY rank
         LIMIT 20
@@ -262,5 +263,10 @@ export class KbService {
     scored.sort((a, b) => b.score - a.score);
 
     return scored.slice(0, topK).map((item) => item.id);
+  }
+
+  private buildFtsQuery(input: string): string {
+    const tokens = input.split(/\s+/).filter((token) => token.length > 0);
+    return tokens.map((token) => `"${token.replace(/\"/g, '""')}"`).join(' ');
   }
 }
