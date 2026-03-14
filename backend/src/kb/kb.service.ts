@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -126,6 +127,9 @@ export class KbService {
 
   async search(userId: number, q: string): Promise<KbItem[]> {
     const query = q.trim();
+    if (query.length === 0) {
+      throw new BadRequestException('Search query must not be empty');
+    }
 
     const ftsPromise = Promise.resolve(
       this.db.all(sql`
@@ -197,7 +201,16 @@ export class KbService {
 
   async findOne(userId: number, id: number): Promise<KbItem> {
     const item = await this.db
-      .select()
+      .select({
+        id: kbItems.id,
+        userId: kbItems.userId,
+        title: kbItems.title,
+        content: kbItems.content,
+        summary: kbItems.summary,
+        sourceUrl: kbItems.sourceUrl,
+        tags: kbItems.tags,
+        createdAt: kbItems.createdAt,
+      })
       .from(kbItems)
       .where(and(eq(kbItems.id, id), eq(kbItems.userId, userId)))
       .get();
@@ -206,7 +219,10 @@ export class KbService {
       throw new NotFoundException('KB item not found');
     }
 
-    return item;
+    return {
+      ...item,
+      embedding: null,
+    };
   }
 
   async delete(userId: number, id: number): Promise<void> {
