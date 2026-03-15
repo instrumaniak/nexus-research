@@ -18,6 +18,22 @@ vi.mock('@/api/admin.api', () => ({
   unbanUser: vi.fn(),
 }));
 
+vi.mock('@/api/kb', () => ({
+  listKbItems: vi.fn(async () => ({ items: [], hasMore: false })),
+  searchKbItems: vi.fn(async () => []),
+  saveKbItem: vi.fn(),
+  deleteKbItem: vi.fn(),
+  getKbItem: vi.fn(),
+  parseTags: (tags: string | null) => {
+    if (!tags) return [];
+    try {
+      return JSON.parse(tags) as string[];
+    } catch {
+      return [];
+    }
+  },
+}));
+
 describe('App routing', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -73,5 +89,66 @@ describe('App routing', () => {
     await waitFor(() => {
       expect(screen.getByText(/user management/i)).toBeInTheDocument();
     });
+  });
+
+  it('authenticated visit to /kb renders Knowledge Base page', async () => {
+    useAuthStore.setState({
+      user: {
+        id: 1,
+        name: 'user',
+        username: 'user',
+        email: 'user@nexus.local',
+        role: 'USER',
+      },
+      accessToken: 'token',
+      isAuthenticated: true,
+      isLoading: false,
+      isInitialising: false,
+      initialise: vi.fn().mockResolvedValue(undefined),
+    });
+
+    window.history.pushState({}, '', '/kb');
+
+    render(
+      <ThemeProvider defaultTheme="light" storageKey="nexus-theme">
+        <App />
+      </ThemeProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /knowledge base/i })).toBeInTheDocument();
+    });
+  });
+
+  it('Knowledge Base nav link is visible and points to /kb', async () => {
+    useAuthStore.setState({
+      user: {
+        id: 1,
+        name: 'user',
+        username: 'user',
+        email: 'user@nexus.local',
+        role: 'USER',
+      },
+      accessToken: 'token',
+      isAuthenticated: true,
+      isLoading: false,
+      isInitialising: false,
+      initialise: vi.fn().mockResolvedValue(undefined),
+    });
+
+    window.history.pushState({}, '', '/chat');
+
+    render(
+      <ThemeProvider defaultTheme="light" storageKey="nexus-theme">
+        <App />
+      </ThemeProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByRole('link', { name: /knowledge base/i })).toBeInTheDocument();
+    });
+
+    const kbLink = screen.getByRole('link', { name: /knowledge base/i });
+    expect(kbLink).toHaveAttribute('href', '/kb');
   });
 });

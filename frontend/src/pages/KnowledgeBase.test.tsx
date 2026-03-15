@@ -143,7 +143,7 @@ describe('KnowledgeBase page', () => {
     });
   });
 
-  it('clear search button clears input', async () => {
+  it('clear search button clears input and restores full item list', async () => {
     const user = userEvent.setup();
     mockListKbItems.mockResolvedValue({ items: [mockItem], hasMore: false });
     renderPage();
@@ -158,6 +158,7 @@ describe('KnowledgeBase page', () => {
 
     await user.click(screen.getByRole('button', { name: /clear search/i }));
     expect(searchInput).toHaveValue('');
+    expect(screen.getByText('Saved Item')).toBeInTheDocument();
   });
 
   it('shows Load more when hasMore is true', async () => {
