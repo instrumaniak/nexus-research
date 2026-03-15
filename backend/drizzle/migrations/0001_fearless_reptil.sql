@@ -83,20 +83,24 @@ CREATE VIRTUAL TABLE IF NOT EXISTS kb_items_fts USING fts5(
   content=kb_items,
   content_rowid=id
 );
+--> statement-breakpoint
 
 -- sqlite-vec semantic search for KB items
 CREATE VIRTUAL TABLE IF NOT EXISTS kb_items_vec USING vec0(
   item_id INTEGER PRIMARY KEY,
   embedding float[384]
 );
+--> statement-breakpoint
 
 -- FTS5 sync triggers
 CREATE TRIGGER IF NOT EXISTS kb_items_fts_insert AFTER INSERT ON kb_items BEGIN
   INSERT INTO kb_items_fts(rowid, title, content, summary) VALUES (new.id, new.title, new.content, new.summary);
 END;
+--> statement-breakpoint
 CREATE TRIGGER IF NOT EXISTS kb_items_fts_delete AFTER DELETE ON kb_items BEGIN
   INSERT INTO kb_items_fts(kb_items_fts, rowid, title, content, summary) VALUES ('delete', old.id, old.title, old.content, old.summary);
 END;
+--> statement-breakpoint
 CREATE TRIGGER IF NOT EXISTS kb_items_fts_update AFTER UPDATE ON kb_items BEGIN
   INSERT INTO kb_items_fts(kb_items_fts, rowid, title, content, summary) VALUES ('delete', old.id, old.title, old.content, old.summary);
   INSERT INTO kb_items_fts(rowid, title, content, summary) VALUES (new.id, new.title, new.content, new.summary);
