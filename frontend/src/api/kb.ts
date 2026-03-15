@@ -15,7 +15,8 @@ export interface KbItem {
 export function parseTags(tags: string | null): string[] {
   if (!tags) return [];
   try {
-    return JSON.parse(tags) as string[];
+    const parsed = JSON.parse(tags);
+    return Array.isArray(parsed) ? (parsed as string[]) : [];
   } catch {
     return [];
   }

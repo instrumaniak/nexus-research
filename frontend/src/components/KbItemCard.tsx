@@ -114,6 +114,7 @@ export function KbItemCard({ item }: KbItemCardProps) {
               size="sm"
               className="h-7 px-2 text-muted-foreground hover:text-destructive"
               onClick={() => setShowDeleteDialog(true)}
+              aria-label="Delete item"
             >
               <Trash2 size={12} />
             </Button>

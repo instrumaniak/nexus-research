@@ -86,8 +86,10 @@ export function KnowledgeBasePage() {
           />
           {searchInput && (
             <button
+              type="button"
               onClick={handleClearSearch}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              aria-label="Clear search"
             >
               <X size={14} />
             </button>
