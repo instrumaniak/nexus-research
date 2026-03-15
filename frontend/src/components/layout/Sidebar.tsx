@@ -4,7 +4,7 @@ import {
   MessageSquarePlus,
   MessageSquare,
   Clock,
-  Database,
+  BookOpen,
   Shield,
   LogOut,
 } from 'lucide-react';
@@ -137,17 +137,22 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           <Clock size={16} className="shrink-0" />
           {!collapsed && <span className="text-[13px] font-medium">History</span>}
         </NavLink>
-        <button
-          title="Knowledge Base (Phase 2)"
-          disabled
-          className={cn(
-            'flex items-center gap-3 w-full rounded-md px-2.5 py-1.5 opacity-40 cursor-not-allowed pointer-events-none text-muted-foreground',
-            collapsed && 'justify-center px-0',
-          )}
+        <NavLink
+          to="/kb"
+          title="Knowledge Base"
+          className={({ isActive }) =>
+            cn(
+              'flex items-center gap-3 w-full rounded-md px-2.5 py-1.5 transition-colors',
+              isActive
+                ? 'bg-accent text-accent-foreground'
+                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+              collapsed && 'justify-center px-0',
+            )
+          }
         >
-          <Database size={16} className="shrink-0" />
+          <BookOpen size={16} className="shrink-0" />
           {!collapsed && <span className="text-[13px] font-medium">Knowledge Base</span>}
-        </button>
+        </NavLink>
         <NavLink
           to="/admin/users"
           title="Admin"

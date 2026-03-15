@@ -14,6 +14,7 @@
     "migrate": "npm run migrate -w backend",
     "generate": "npm run generate -w backend",
     "studio": "npm run studio -w backend",
+    "create-superadmin": "npm run create-superadmin -w backend --",
     "prepare": "husky"
   },
   "engines": {

@@ -19,7 +19,8 @@
     "format": "prettier --write \"src/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\"",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint \"src/**/*.ts\" --fix",
-    "prepare": "husky"
+    "prepare": "husky",
+    "create-superadmin": "ts-node scripts/create-superadmin.ts"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
@@ -40,6 +41,7 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",
+    "prompts": "^2.4.2",
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1",
     "sqlite-vec": "^0.1.0",

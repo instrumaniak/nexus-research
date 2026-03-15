@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Globe, Database, FlaskConical, Send, ExternalLink, Loader2 } from 'lucide-react';
+import { Globe, Database, FlaskConical, Send, ExternalLink, Loader2, Bookmark } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { useChatStore } from '@/stores/chat.store';
+import { useKbStore } from '@/stores/kb.store';
 import { Textarea } from '@/components/ui/textarea';
 
 export function ChatPage() {
@@ -106,12 +107,15 @@ export function ChatPage() {
             <Globe size={11} /> Web Search
           </button>
           <button
-            disabled
+            onClick={() => setMode('kb')}
             className={cn(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border border-border text-muted-foreground opacity-40 cursor-not-allowed',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium border transition-all',
+              mode === 'kb'
+                ? 'border-primary bg-primary/10 text-primary'
+                : 'border-border text-muted-foreground hover:border-muted-foreground',
             )}
           >
-            <Database size={11} /> KB Search <span className="text-[9px] opacity-60">· P2</span>
+            <Database size={11} /> KB Search
           </button>
           <button
             disabled
@@ -155,19 +159,47 @@ export function ChatPage() {
               )}
               <div
                 className={cn(
-                  'flex flex-col gap-2 max-w-[85%]',
+                  'flex flex-col gap-2 max-w-[85%] group',
                   m.role === 'user' ? 'items-end' : 'items-start',
                 )}
               >
                 <div
                   className={cn(
-                    'px-4 py-3 rounded-2xl text-[14.5px] leading-relaxed whitespace-pre-wrap',
+                    'px-4 py-3 rounded-2xl text-[14.5px] leading-relaxed whitespace-pre-wrap relative',
                     m.role === 'user'
                       ? 'bg-primary text-primary-foreground shadow-sm'
                       : 'bg-card border border-border text-foreground shadow-sm',
                   )}
                 >
                   {m.content}
+                  {m.role === 'assistant' && m.content && (
+                    <button
+                      onClick={async () => {
+                        const title = m.content.slice(0, 60) + (m.content.length > 60 ? '...' : '');
+                        const { saveItem } = useKbStore.getState();
+                        try {
+                          await saveItem({ title, content: m.content });
+                          // Show feedback briefly
+                          const btn = document.getElementById(`save-btn-${m.id}`);
+                          if (btn) {
+                            btn.innerHTML =
+                              '<svg size="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
+                            setTimeout(() => {
+                              btn.innerHTML =
+                                '<svg size="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+                            }, 1500);
+                          }
+                        } catch {
+                          // Error handled in store
+                        }
+                      }}
+                      id={`save-btn-${m.id}`}
+                      title="Save to Knowledge Base"
+                      className="absolute right-2 bottom-2 opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-muted transition-all text-muted-foreground hover:text-primary"
+                    >
+                      <Bookmark size={12} />
+                    </button>
+                  )}
                 </div>
                 {m.role === 'assistant' && m.sources && m.sources.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-1">

@@ -4,6 +4,7 @@ import { LoginPage } from '@/pages/Login';
 import { RegisterPage } from '@/pages/Register';
 import { ChatPage } from '@/pages/Chat';
 import { HistoryPage } from '@/pages/History';
+import { KnowledgeBasePage } from '@/pages/KnowledgeBase';
 import { AdminUsersPage } from '@/pages/admin/Users';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { RequireAuth } from '@/components/RequireAuth';
@@ -55,6 +56,7 @@ export default function App() {
             <Route path="/chat" element={<ChatPage />} />
             <Route path="/chat/:id" element={<ChatPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/kb" element={<KnowledgeBasePage />} />
 
             <Route element={<RequireSuperadmin />}>
               <Route path="/admin/users" element={<AdminUsersPage />} />
