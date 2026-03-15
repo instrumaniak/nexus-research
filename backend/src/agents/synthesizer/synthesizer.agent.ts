@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AiProviderService } from '../../ai-provider/ai-provider.service';
-import { AI_MODELS } from '../../config/models.config';
+import { getAiModels } from '../../config/models.config';
 
 export interface SynthesizerSummary {
   url: string;
@@ -26,7 +26,7 @@ export class SynthesizerAgent {
 
     try {
       for await (const token of this.aiProvider.stream({
-        model: AI_MODELS.quickQA,
+        model: getAiModels().quickQA,
         systemPrompt:
           'You are a helpful research assistant. Answer clearly and cite sources inline as [1][2].',
         userPrompt: `Query: ${query}\n\nSources:\n${numberedSources}`,

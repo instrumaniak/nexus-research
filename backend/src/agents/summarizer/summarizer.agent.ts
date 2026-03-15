@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AiProviderService } from '../../ai-provider/ai-provider.service';
-import { AI_MODELS } from '../../config/models.config';
+import { getAiModels } from '../../config/models.config';
 import type { ScrapedPage } from '../reader/reader.agent';
 
 @Injectable()
@@ -14,7 +14,7 @@ export class SummarizerAgent {
 
     try {
       const summary = await this.aiProvider.complete({
-        model: AI_MODELS.summarization,
+        model: getAiModels().summarization,
         systemPrompt:
           'You are a research assistant. Return 3-5 concise factual bullet points only.',
         userPrompt: `Query: ${query}\nArticle URL: ${page.url}\nArticle title: ${page.title}\nArticle text:\n${page.text}`,

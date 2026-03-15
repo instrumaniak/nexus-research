@@ -1,5 +1,5 @@
 import { AiProviderService } from '../../ai-provider/ai-provider.service';
-import { AI_MODELS } from '../../config/models.config';
+import { getAiModels } from '../../config/models.config';
 import { SummarizerAgent } from './summarizer.agent';
 
 describe('SummarizerAgent', () => {
@@ -28,7 +28,7 @@ describe('SummarizerAgent', () => {
 
     expect(aiProvider.complete).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: AI_MODELS.summarization,
+        model: getAiModels().summarization,
       }),
     );
   });
