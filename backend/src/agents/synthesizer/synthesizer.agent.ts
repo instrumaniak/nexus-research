@@ -14,22 +14,34 @@ export class SynthesizerAgent {
 
   constructor(private readonly aiProvider: AiProviderService) {}
 
-  async *synthesize(summaries: SynthesizerSummary[], query: string): AsyncGenerator<string> {
+  async *synthesize(
+    summaries: SynthesizerSummary[],
+    query: string,
+    options?: { systemPrompt?: string; userPrompt?: string },
+  ): AsyncGenerator<string> {
     this.logger.log(`Running SynthesizerAgent - summaries: ${summaries.length}`);
 
-    const numberedSources = summaries
-      .map(
-        (summary, index) =>
-          `[${index + 1}] ${summary.title}\nURL: ${summary.url}\nSummary:\n${summary.summary}`,
-      )
-      .join('\n\n');
+    const systemPrompt =
+      options?.systemPrompt ??
+      'You are a helpful research assistant. Answer clearly and cite sources inline as [1][2].';
+
+    const userPrompt =
+      options?.userPrompt ??
+      (() => {
+        const numberedSources = summaries
+          .map(
+            (summary, index) =>
+              `[${index + 1}] ${summary.title}\nURL: ${summary.url}\nSummary:\n${summary.summary}`,
+          )
+          .join('\n\n');
+        return `Query: ${query}\n\nSources:\n${numberedSources}`;
+      })();
 
     try {
       for await (const token of this.aiProvider.stream({
         model: getAiModels().quickQA,
-        systemPrompt:
-          'You are a helpful research assistant. Answer clearly and cite sources inline as [1][2].',
-        userPrompt: `Query: ${query}\n\nSources:\n${numberedSources}`,
+        systemPrompt,
+        userPrompt,
       })) {
         yield token;
       }

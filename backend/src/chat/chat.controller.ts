@@ -42,28 +42,40 @@ export class ChatController {
     response.setHeader('Connection', 'keep-alive');
     response.flushHeaders();
 
-    if (dto.mode === 'KB_SEARCH' || dto.mode === 'DEEP_RESEARCH') {
-      response.write(`data: ${JSON.stringify({ step: 'error', message: 'Coming soon' })}\n\n`);
-      response.end();
-      return;
-    }
-
     let fullAnswer = '';
     let completed = false;
     let sources: Array<{ title: string; url: string }> = [];
 
     try {
-      for await (const event of this.orchestratorService.runWebSearch(dto.query, user.id)) {
-        if (event.step === 'token') {
-          fullAnswer += event.token;
+      if (dto.mode === 'KB_SEARCH') {
+        for await (const event of this.orchestratorService.runKbSearch(dto.query, user.id)) {
+          if (event.step === 'token') {
+            fullAnswer += event.token ?? '';
+          }
+          if (event.step === 'done') {
+            completed = true;
+            sources = event.sources ?? [];
+          }
+          response.write(`data: ${JSON.stringify(event)}\n\n`);
         }
+      } else if (dto.mode === 'DEEP_RESEARCH') {
+        response.write(`data: ${JSON.stringify({ step: 'error', message: 'Coming soon' })}\n\n`);
+        response.end();
+        return;
+      } else {
+        // WEB_SEARCH pipeline — unchanged
+        for await (const event of this.orchestratorService.runWebSearch(dto.query, user.id)) {
+          if (event.step === 'token') {
+            fullAnswer += event.token;
+          }
 
-        if (event.step === 'done') {
-          completed = true;
-          sources = event.sources;
+          if (event.step === 'done') {
+            completed = true;
+            sources = event.sources;
+          }
+
+          response.write(`data: ${JSON.stringify(event)}\n\n`);
         }
-
-        response.write(`data: ${JSON.stringify(event)}\n\n`);
       }
 
       if (completed) {

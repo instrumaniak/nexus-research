@@ -79,6 +79,13 @@ export class KbService {
       )}, ${embeddingBlob})`,
     );
 
+    // Explicitly insert into FTS table (triggers may not exist or work)
+    this.db.run(
+      sql`INSERT INTO kb_items_fts(rowid, title, content, summary) VALUES (${sql.raw(
+        String(item.id),
+      )}, ${item.title}, ${item.content}, ${item.summary})`,
+    );
+
     this.loggingService.log(`KB item saved: "${dto.title}"`, 'KbService', userId);
 
     return {
@@ -232,6 +239,7 @@ export class KbService {
     await this.findOne(userId, id);
 
     this.db.run(sql`DELETE FROM kb_items_vec WHERE item_id = ${id}`);
+    this.db.run(sql`DELETE FROM kb_items_fts WHERE rowid = ${id}`);
 
     await this.db.delete(kbItems).where(and(eq(kbItems.id, id), eq(kbItems.userId, userId)));
 

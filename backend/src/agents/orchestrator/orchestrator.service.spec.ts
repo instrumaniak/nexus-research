@@ -13,6 +13,9 @@ describe('OrchestratorService', () => {
   const synthesizerAgent = {
     synthesize: jest.fn(),
   };
+  const kbService = {
+    search: jest.fn(),
+  };
   const logging = {
     log: jest.fn(),
     warn: jest.fn(),
@@ -27,6 +30,7 @@ describe('OrchestratorService', () => {
       readerAgent as never,
       summarizerAgent as never,
       synthesizerAgent as never,
+      kbService as never,
       logging as never,
     );
     jest.clearAllMocks();
@@ -91,5 +95,61 @@ describe('OrchestratorService', () => {
         sources: [{ title: 'Example', url: 'https://example.com' }],
       },
     ]);
+  });
+
+  it('runKbSearch returns no results message when KB is empty', async () => {
+    kbService.search.mockResolvedValue([]);
+
+    const events = [];
+    for await (const event of service.runKbSearch('test query', 1)) {
+      events.push(event);
+    }
+
+    expect(events).toEqual([
+      { step: 'progress', message: 'Searching your knowledge base...' },
+      {
+        step: 'done',
+        answer:
+          'No relevant items were found in your knowledge base for this query. Try saving more research on this topic first.',
+        sources: [],
+      },
+    ]);
+  });
+
+  it('runKbSearch synthesizes answer from KB items', async () => {
+    kbService.search.mockResolvedValue([
+      {
+        id: 1,
+        title: 'NestJS Guide',
+        content: 'NestJS is a framework for building efficient server-side applications.',
+        summary: null,
+        sourceUrl: 'https://docs.nestjs.com',
+        tags: null,
+        createdAt: new Date(),
+      },
+    ]);
+    synthesizerAgent.synthesize.mockImplementation(async function* () {
+      yield 'NestJS is a great framework';
+    });
+
+    const events = [];
+    for await (const event of service.runKbSearch('what is nestjs', 1)) {
+      events.push(event);
+    }
+
+    expect(events).toContainEqual({
+      step: 'progress',
+      message: 'Searching your knowledge base...',
+    });
+    expect(events).toContainEqual({
+      step: 'progress',
+      message: 'Synthesising answer from your knowledge base...',
+    });
+    expect(events).toContainEqual({ step: 'token', token: 'NestJS is a great framework' });
+    expect(events).toContainEqual({
+      step: 'done',
+      answer: 'NestJS is a great framework',
+      sources: [{ title: 'NestJS Guide', url: 'https://docs.nestjs.com' }],
+    });
   });
 });

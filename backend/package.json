@@ -20,7 +20,8 @@
     "format:check": "prettier --check \"src/**/*.ts\"",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint \"src/**/*.ts\" --fix",
     "prepare": "husky",
-    "create-superadmin": "ts-node scripts/create-superadmin.ts"
+    "create-superadmin": "ts-node scripts/create-superadmin.ts",
+    "backfill-kb-fts": "ts-node scripts/backfill-kb-fts.ts"
   },
   "dependencies": {
     "@nestjs/axios": "^4.0.1",
